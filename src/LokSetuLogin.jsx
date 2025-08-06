@@ -58,6 +58,9 @@ const LokSetuLogin = () => {
         return <ForgotPasswordScreen {...screenProps} />;
       case 'adminlogin':
         return <AdminLoginScreen {...screenProps} />;
+      case 'voterList':
+        const VoterList = require('./components/voter/VoterList').default;
+        return <VoterList />;
       default:
         return <MainLoginScreen {...screenProps} />;
     }

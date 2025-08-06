@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.80.2",
+    "@reduxjs/toolkit": "^2.8.2",
+    "axios": "^1.11.0",
     "expo-linear-gradient": "^14.1.5",
     "react": "19.1.0",
     "react-native": "0.80.2",
-    "react-native-linear-gradient": "^2.8.3"
+    "react-native-linear-gradient": "^2.8.3",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

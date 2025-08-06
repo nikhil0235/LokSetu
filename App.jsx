@@ -5,16 +5,21 @@
  * @format
  */
 
+import React from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { Provider } from 'react-redux';
+import { store } from './src/store';
 import LokSetuLogin from './src/LokSetuLogin';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <View style={styles.container}>
-     <LokSetuLogin />
-    </View>
+    <Provider store={store}>
+      <View style={styles.container}>
+        <LokSetuLogin />
+      </View>
+    </Provider>
   );
 }
 

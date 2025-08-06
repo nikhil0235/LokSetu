@@ -47,8 +47,7 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
       const result = await dummyAdminLogin(loginData.username, loginData.password);
       console.warn('Admin login successful:', result);
       Alert.alert('Success', 'Welcome, Admin!');
-      // Navigate to admin dashboard or home screen
-      onNavigate('adminDashboard');
+      onNavigate('voterList');
     } catch (error) {
       console.error('Admin login failed:', error.message);
       Alert.alert('Login Failed', error.message);
