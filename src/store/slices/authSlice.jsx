@@ -9,9 +9,16 @@ export const loginUser = createAsyncThunk(
       return rejectWithValue('Username and password are required');
     }
 
-    // Example: Check if username is allowed (authorization)
-    const allowedUsers = ['admin', 'user1', 'user2']; // Replace with real logic or API call
-    if (!allowedUsers.includes(username)) {
+    // Role-based authorization check
+    const allowedUsers = {
+      'super_admin': { role: 'super_admin', permissions: ['all'] },
+      'admin1': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
+      'admin2': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
+      'admin3': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
+      'booth1': { role: 'booth_boy', permissions: ['voter_data_entry', 'booth_management'] }
+    };
+    
+    if (!allowedUsers[username]) {
       return rejectWithValue('Unauthorized user');
     }
 
@@ -163,11 +170,12 @@ const authSlice = createSlice({
     // Login
     builder
       .addCase(loginUser.pending, (state, action) => {
-        // Authorization check before proceeding
+        // Role-based authorization check
+        const allowedUsers = ['super_admin', 'admin1', 'admin2', 'admin3', 'booth1'];
         if (
           action.meta &&
           action.meta.arg &&
-          ['admin', 'user1', 'user2'].includes(action.meta.arg.username)
+          allowedUsers.includes(action.meta.arg.username)
         ) {
           state.loading.login = true;
           state.errors.login = null;
@@ -199,9 +207,9 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading.login = false;
-        // Explicit authorization check for rejected login
+        // Role-based authorization check for rejected login
         const attemptedUsername = action.meta?.arg?.username;
-        const allowedUsers = ['admin', 'user1', 'user2'];
+        const allowedUsers = ['super_admin', 'admin1', 'admin2', 'admin3', 'booth1'];
         if (!attemptedUsername || !allowedUsers.includes(attemptedUsername)) {
           state.errors.login = 'Unauthorized user';
         } else {

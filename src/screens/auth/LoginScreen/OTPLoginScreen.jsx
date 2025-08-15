@@ -27,14 +27,14 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
 
   // Dummy: Send OTP
   const dummySendOTP = async (phoneNumber) => {
-    console.log(`Sending dummy OTP to +91${phoneNumber}`);
+    console.log(`Sending dummy OTP to +91${encodeURIComponent(phoneNumber)}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
     return true;
   };
 
   // Dummy: Verify OTP
   const dummyVerifyOTP = async (phoneNumber, otp) => {
-    console.log(`Verifying dummy OTP ${otp} for +91${phoneNumber}`);
+    console.log(`Verifying dummy OTP for +91${encodeURIComponent(phoneNumber)}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     if (otp === '123456') {
@@ -53,7 +53,7 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
 
   // Dummy: Resend OTP
   const dummyResendOTP = async (phoneNumber) => {
-    console.log(`Resending dummy OTP to +91${phoneNumber}`);
+    console.log(`Resending dummy OTP to +91${encodeURIComponent(phoneNumber)}`);
     await new Promise((resolve) => setTimeout(resolve, 500));
     return true;
   };
@@ -75,7 +75,7 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     setLoading(true);
     try {
       const result = await dummyVerifyOTP(loginData.phoneNumber, loginData.otp);
-      console.log('OTP verified:', result);
+      console.log('OTP verified successfully');
       Alert.alert('Success', 'OTP verified successfully.');
       // Navigate or update state here
     } catch (error) {
