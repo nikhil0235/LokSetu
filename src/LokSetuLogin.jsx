@@ -18,9 +18,10 @@ import ForgotPasswordScreen from './screens/auth/LoginScreen/ForgotPasswordScree
 import AdminLoginScreen from './screens/auth/LoginScreen/AdminLoginScreen';
 
 
-const LokSetuLogin = () => {
+const LokSetuLogin = ({ onLoginSuccess }) => {
   const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'password', 'otp'
   const [showHeader, setShowHeader] = useState(true);
+  const [selectedRole, setSelectedRole] = useState('super_admin');
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -47,6 +48,9 @@ const LokSetuLogin = () => {
       onNavigate: handleNavigation,
       loginData,
       updateLoginData,
+      onLoginSuccess,
+      selectedRole,
+      setSelectedRole,
     };
 
     switch (currentScreen) {
@@ -58,9 +62,6 @@ const LokSetuLogin = () => {
         return <ForgotPasswordScreen {...screenProps} />;
       case 'adminlogin':
         return <AdminLoginScreen {...screenProps} />;
-      case 'voterList':
-        const VoterList = require('./components/voter/VoterList').default;
-        return <VoterList />;
       default:
         return <MainLoginScreen {...screenProps} />;
     }
@@ -75,15 +76,11 @@ const LokSetuLogin = () => {
 
 
       {/* Main Content */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.mainContent}
-      >
+      <View style={styles.mainContent}>
         {renderCurrentScreen()}
-      </KeyboardAvoidingView>
+      </View>
 
-      {/* Footer */}
-      <AppFooter />
+
     </View>
   );
 };
@@ -97,6 +94,7 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
   },
+
 });
 
 export default LokSetuLogin;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './src/store';
-import LoginScreen from './src/screens/auth/LoginScreen';
+import LokSetuLogin from './src/LokSetuLogin';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import SuperAdminDashboardScreen from './src/screens/admin/SuperAdminDashboardScreen';
 import CreateAdminScreen from './src/screens/admin/CreateAdminScreen';
@@ -42,7 +42,7 @@ const App = () => {
 
   const renderScreen = () => {
     if (!user) {
-      return <LoginScreen onLoginSuccess={handleLogin} />;
+      return <LokSetuLogin onLoginSuccess={handleLogin} />;
     }
 
 
@@ -97,7 +97,7 @@ const App = () => {
         onClose={() => setShowDrawer(false)}
         user={user}
         onNavigate={handleNavigation}
-        onLogout={handleLogout}
+        onLogout={handleLogout} 
       />
     </Provider>
   );

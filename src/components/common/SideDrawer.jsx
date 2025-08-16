@@ -86,8 +86,13 @@ const styles = StyleSheet.create({
   },
   drawer: {
     width: width * 0.75,
+    height: '100%',
     backgroundColor: '#fff',
     elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   header: {
     backgroundColor: '#00BCD4',

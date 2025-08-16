@@ -21,7 +21,7 @@ import SwitchOption from '../../../components/common/SwitchOption';
 //   TEXT_PRIMARY: '#1C1C1E',
 //   TEXT_SECONDARY: '#8E8E93',
 // };
-const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
+const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSuccess, selectedRole }) => {
   const [loading, setLoading] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
 
@@ -76,8 +76,24 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     try {
       const result = await dummyVerifyOTP(loginData.phoneNumber, loginData.otp);
       console.log('OTP verified successfully');
-      Alert.alert('Success', 'OTP verified successfully.');
-      // Navigate or update state here
+      
+      // Create user data for OTP login
+      const userData = {
+        username: loginData.phoneNumber,
+        role: selectedRole,
+        name: selectedRole === 'super_admin' ? 'Super Admin' : 
+              selectedRole === 'admin' ? 'Admin' : 'OTP User',
+        phone: `+91${loginData.phoneNumber}`,
+        ...(selectedRole === 'booth_boy' && {
+          id: 'BB002',
+          assignedBooths: ['B004', 'B005'],
+          constituency: 'Constituency-2',
+          area: 'South Zone',
+          totalVoters: 1523
+        })
+      };
+      
+      onLoginSuccess(userData);
     } catch (error) {
       Alert.alert('Verification Failed', error.message);
     } finally {
@@ -129,7 +145,7 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
               <GradientButton
                 title={loading ? 'Sending OTP...' : 'Send OTP'}
                 onPress={handleSendOtp}
-                colors={['#19a537ff', '#34C759'| '#70be51ff']}
+                colors={['#19a537ff', '#70be51ff']}
                 disabled={!isPhoneValid}
                 loading={loading}
               />
@@ -145,7 +161,7 @@ const OTPLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
               <GradientButton
                 title={loading ? 'Verifying...' : 'Verify & Login'}
                 onPress={handleVerifyOtp}
-               colors={['#34C759', '#34C759'| '#2c910eff']}
+                colors={['#34C759', '#2c910eff']}
                 disabled={!isOTPValid}
                 loading={loading}
               />

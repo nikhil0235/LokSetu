@@ -21,19 +21,30 @@ const COLORS = {
   TEXT_SECONDARY: '#8E8E93',
 };
 
-const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
+const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSuccess, selectedRole }) => {
   const [loading, setLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('password');
 
   const dummyLoginWithPassword = async (username, password) => {
     console.log(`Simulating login for: ${username}`);
     await new Promise((resolve) => setTimeout(resolve, 600)); // simulate delay
 
-    if (username === 'testuser' && password === 'password123') {
+    // Demo credentials from the original LoginScreen
+    const validCredentials = {
+      'super_admin': 'super123',
+      'admin1': 'admin123', 
+      'booth1': 'booth123',
+      'testuser': 'password123'
+    };
+
+    if (validCredentials[username] && validCredentials[username] === password) {
       return {
         token: 'dummy-token',
         user: {
           id: 1,
-          name: 'Test User',
+          name: username === 'super_admin' ? 'Super Admin' :
+                username === 'admin1' ? 'Admin' :
+                username === 'booth1' ? 'Booth Boy' : 'Test User',
           username,
         },
       };
@@ -47,8 +58,23 @@ const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     try {
       const result = await dummyLoginWithPassword(loginData.username, loginData.password);
       console.warn('Login successful:', result);
-      Alert.alert('Success', 'Login successful');
-      // You can navigate here: onNavigate('home') or something similar
+      
+      // Create user data based on selected role
+      const userData = {
+        username: loginData.username,
+        role: selectedRole,
+        name: result.user.name,
+        ...(selectedRole === 'booth_boy' && {
+          id: 'BB001',
+          phone: '+91 9876543210',
+          assignedBooths: ['B001', 'B002', 'B003'],
+          constituency: 'Constituency-1',
+          area: 'North Zone',
+          totalVoters: 2847
+        })
+      };
+      
+      onLoginSuccess(userData);
     } catch (error) {
       console.error('Login failed:', error.message);
       Alert.alert('Login Failed', error.message);
@@ -62,60 +88,115 @@ const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     loginData.password && loginData.password.length >= 6;
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <LoginCard>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <BackButton onPress={() => onNavigate('main')} />
-        <ScreenHeader
-          icon="🔐"
-          title="Password Login"
-          subtitle="Enter your credentials to access your account"
-        />
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to your account</Text>
+      </View>
+
+      <View style={styles.content}>
+        {/* Login Method Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, loginMethod === 'password' && styles.activeTab]}
+            onPress={() => setLoginMethod('password')}
+          >
+            <Text style={[styles.tabText, loginMethod === 'password' && styles.activeTabText]}>Password</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, loginMethod === 'otp' && styles.activeTab]}
+            onPress={() => setLoginMethod('otp')}
+          >
+            <Text style={[styles.tabText, loginMethod === 'otp' && styles.activeTabText]}>OTP</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.formContainer}>
-          <InputField
-            label="Username/Mobile"
-            placeholder="Enter username or mobile number"
-            value={loginData.username}
-            onChangeText={(value) => updateLoginData('username', value)}
-          />
+          {loginMethod === 'password' ? (
+            <>
+              <InputField
+                label="Username/Mobile"
+                placeholder="Enter username or mobile number"
+                value={loginData.username}
+                onChangeText={(value) => updateLoginData('username', value)}
+              />
 
-          <InputField
-            label="Password"
-            placeholder="Enter your password"
-            value={loginData.password}
-            onChangeText={(value) => updateLoginData('password', value)}
-            secureTextEntry
-          />
+              <InputField
+                label="Password"
+                placeholder="Enter your password"
+                value={loginData.password}
+                onChangeText={(value) => updateLoginData('password', value)}
+                secureTextEntry
+              />
 
-          <TouchableOpacity style={styles.forgotPassword} onPress={() => onNavigate('forgotPassword')}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+              <TouchableOpacity style={styles.forgotPassword} onPress={() => onNavigate('forgotPassword')}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
 
-          <GradientButton
-            title={loading ? 'Logging in...' : 'Login Securely'}
-            onPress={handlePasswordLogin}
-            colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
-            disabled={!isFormValid || loading}
-            loading={loading}
-          />
-
-          <SwitchOption
-            text="Switch to OTP Login"
-            onPress={() => onNavigate('otp')}
-          />
+              <GradientButton
+                title={loading ? 'Logging in...' : 'Login Securely'}
+                onPress={handlePasswordLogin}
+                colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
+                disabled={!isFormValid || loading}
+                loading={loading}
+              />
+            </>
+          ) : (
+            <>
+              <InputField
+                label="Phone Number"
+                placeholder="Enter phone number"
+                value={loginData.phoneNumber}
+                onChangeText={(value) => updateLoginData('phoneNumber', value)}
+                keyboardType="phone-pad"
+              />
+              <GradientButton
+                title="Send OTP"
+                onPress={() => onNavigate('otp')}
+                colors={[COLORS.SUCCESS, '#2c910eff']}
+                disabled={!loginData.phoneNumber || loginData.phoneNumber.length < 10}
+              />
+            </>
+          )}
         </View>
-      </LoginCard>
-    </ScrollView>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    paddingTop: 60,
     paddingHorizontal: 20,
+    paddingBottom: 30,
+    backgroundColor: '#FFFFFF',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginBottom: 10,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    justifyContent: 'flex-start',
   },
   formContainer: {
-    marginBottom: 20,
+    marginTop: 10,
+    paddingBottom: 20,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
@@ -125,6 +206,36 @@ const styles = StyleSheet.create({
     color: COLORS.SECONDARY,
     fontSize: 14,
     fontWeight: '600',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 30,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  activeTabText: {
+    color: '#1C1C1E',
+    fontWeight: '700',
   },
 });
 

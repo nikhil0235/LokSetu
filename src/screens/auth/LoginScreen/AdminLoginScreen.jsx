@@ -20,19 +20,27 @@ const COLORS = {
   TEXT_SECONDARY: '#8E8E93',
 };
 
-const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
+const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSuccess, selectedRole }) => {
   const [loading, setLoading] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('password');
 
   const dummyAdminLogin = async (username, password) => {
     console.log(`Admin login attempt: ${username}`);
     await new Promise((resolve) => setTimeout(resolve, 600)); // simulate delay
 
-    if (username === 'admin' && password === 'admin123') {
+    // Support multiple admin credentials
+    const validAdmins = {
+      'admin': 'admin123',
+      'admin1': 'admin123',
+      'super_admin': 'super123'
+    };
+
+    if (validAdmins[username] && validAdmins[username] === password) {
       return {
         token: 'admin-token',
         user: {
-          id: 0,
-          role: 'admin',
+          id: username === 'super_admin' ? 0 : 1,
+          role: username === 'super_admin' ? 'super_admin' : 'admin',
           username,
         },
       };
@@ -46,8 +54,16 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     try {
       const result = await dummyAdminLogin(loginData.username, loginData.password);
       console.warn('Admin login successful:', result);
-      Alert.alert('Success', 'Welcome, Admin!');
-      onNavigate('voterList');
+      
+      // Create user data for admin login
+      const userData = {
+        username: loginData.username,
+        role: selectedRole,
+        name: selectedRole === 'super_admin' ? 'Super Admin' : 'Admin',
+        id: result.user.id
+      };
+      
+      onLoginSuccess(userData);
     } catch (error) {
       console.error('Admin login failed:', error.message);
       Alert.alert('Login Failed', error.message);
@@ -61,51 +77,140 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData }) => {
     loginData.password && loginData.password.length >= 6;
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <LoginCard>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <BackButton onPress={() => onNavigate('main')} />
-        <ScreenHeader
-          icon="🛡️"
-          title="Admin Login"
-          subtitle="Restricted access for administrators only"
-        />
+        <Text style={styles.title}>Admin Access</Text>
+        <Text style={styles.subtitle}>Secure administrative login</Text>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Login Method Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, loginMethod === 'password' && styles.activeTab]}
+            onPress={() => setLoginMethod('password')}
+          >
+            <Text style={[styles.tabText, loginMethod === 'password' && styles.activeTabText]}>Password</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, loginMethod === 'otp' && styles.activeTab]}
+            onPress={() => setLoginMethod('otp')}
+          >
+            <Text style={[styles.tabText, loginMethod === 'otp' && styles.activeTabText]}>OTP</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.formContainer}>
-          <InputField
-            label="Admin Username"
-            placeholder="Enter admin username"
-            value={loginData.username}
-            onChangeText={(value) => updateLoginData('username', value)}
-          />
+          {loginMethod === 'password' ? (
+            <>
+              <InputField
+                label="Admin Username"
+                placeholder="Enter admin username"
+                value={loginData.username}
+                onChangeText={(value) => updateLoginData('username', value)}
+              />
 
-          <InputField
-            label="Password"
-            placeholder="Enter admin password"
-            value={loginData.password}
-            onChangeText={(value) => updateLoginData('password', value)}
-            secureTextEntry
-          />
+              <InputField
+                label="Password"
+                placeholder="Enter admin password"
+                value={loginData.password}
+                onChangeText={(value) => updateLoginData('password', value)}
+                secureTextEntry
+              />
 
-          <GradientButton
-            title={loading ? 'Logging in...' : 'Login as Admin'}
-            onPress={handleAdminLogin}
-            colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
-            disabled={!isFormValid || loading}
-            loading={loading}
-          />
+              <GradientButton
+                title={loading ? 'Logging in...' : 'Login as Admin'}
+                onPress={handleAdminLogin}
+                colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
+                disabled={!isFormValid || loading}
+                loading={loading}
+              />
+            </>
+          ) : (
+            <>
+              <InputField
+                label="Phone Number"
+                placeholder="Enter phone number"
+                value={loginData.phoneNumber}
+                onChangeText={(value) => updateLoginData('phoneNumber', value)}
+                keyboardType="phone-pad"
+              />
+              <GradientButton
+                title="Send OTP"
+                onPress={() => onNavigate('otp')}
+                colors={[COLORS.SUCCESS, '#2c910eff']}
+                disabled={!loginData.phoneNumber || loginData.phoneNumber.length < 10}
+              />
+            </>
+          )}
         </View>
-      </LoginCard>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    paddingTop: 60,
     paddingHorizontal: 20,
+    paddingBottom: 30,
+    backgroundColor: '#FFFFFF',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginBottom: 10,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   formContainer: {
-    marginBottom: 20,
+    marginTop: 10,
+    marginBottom: 40,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 30,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  activeTabText: {
+    color: '#1C1C1E',
+    fontWeight: '700',
   },
 });
 
