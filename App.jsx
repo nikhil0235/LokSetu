@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { Provider } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+import { Linking } from 'react-native';
 import { store } from './src/store';
+import { logout, setAuthData } from './src/store/authSlice';
+import { storage } from './src/utils/storage';
+import { parseResetToken, isResetPasswordLink } from './src/utils/deepLinking';
 import LokSetuLogin from './src/LokSetuLogin';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import SuperAdminDashboardScreen from './src/screens/admin/SuperAdminDashboardScreen';
@@ -10,24 +14,64 @@ import ScrapperScreen from './src/screens/admin/ScrapperScreen';
 import ReportScreen from './src/screens/admin/ReportScreen';
 import CreateBoothBoyScreen from './src/screens/admin/CreateBoothBoyScreen';
 import BoothAssignmentScreen from './src/screens/admin/BoothAssignmentScreen';
+import CreatedBoothBoysScreen from './src/screens/admin/CreatedBoothBoysScreen';
+import AllAdminsScreen from './src/screens/admin/AllAdminsScreen';
+import AllBoothBoysScreen from './src/screens/admin/AllBoothBoysScreen';
+import BoothListScreen from './src/screens/BoothListScreen';
+import BoothSelectionScreen from './src/screens/admin/BoothSelectionScreen';
 import { BoothBoyDashboard } from './src/screens/boothboy';
 import SideDrawer from './src/components/common/SideDrawer';
+import SplashScreen from './src/components/common/SplashScreen';
 import { View, Text, TouchableOpacity } from 'react-native';
 
-const App = () => {
-  const [user, setUser] = useState(null);
+const AppContent = () => {
+  const dispatch = useDispatch();
+  const { user, token } = useSelector(state => state.auth);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [resetToken, setResetToken] = useState(null);
 
+  useEffect(() => {
+    const loadStoredAuth = async () => {
+      const storedToken = await storage.getToken();
+      const storedUser = await storage.getUserData();
 
+      if (storedToken && storedUser) {
+        dispatch(setAuthData({ token: storedToken, user: storedUser }));
+      }
+    };
+    
+    const handleDeepLink = (url) => {
+      if (url && isResetPasswordLink(url)) {
+        const token = parseResetToken(url);
+        if (token) {
+          setResetToken(token);
+          // Force logout to show login screen with reset password
+          dispatch(logout());
+        }
+      }
+    };
+
+    // Handle initial URL if app was opened via deep link
+    Linking.getInitialURL().then(handleDeepLink);
+
+    // Handle deep links when app is already running
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    loadStoredAuth();
+
+    return () => subscription?.remove();
+  }, [dispatch]);
 
   const handleLogin = (userData) => {
-    setUser(userData);
     setCurrentScreen('dashboard');
   };
 
   const handleLogout = () => {
-    setUser(null);
+    dispatch(logout());
     setCurrentScreen('dashboard');
   };
 
@@ -41,11 +85,13 @@ const App = () => {
   };
 
   const renderScreen = () => {
-    if (!user) {
-      return <LokSetuLogin onLoginSuccess={handleLogin} />;
+    if (showSplash) {
+      return <SplashScreen onFinish={() => setShowSplash(false)} />;
     }
 
-
+    if (!user) {
+      return <LokSetuLogin onLoginSuccess={handleLogin} resetToken={resetToken} />;
+    }
 
     // Handle sub-screens
     if (currentScreen !== 'dashboard') {
@@ -56,8 +102,7 @@ const App = () => {
           return <CreateAdminScreen {...screenProps} />;
         case 'assignConstituency':
           return <ConstituencyAssignmentScreen {...screenProps} />;
-        case 'dataScraper':
-          return <ScrapperScreen {...screenProps} />;
+
         case 'systemReports':
           return <ReportScreen {...screenProps} />;
         case 'createBoothBoy':
@@ -66,6 +111,16 @@ const App = () => {
           return <BoothAssignmentScreen {...screenProps} />;
         case 'reports':
           return <ReportScreen {...screenProps} />;
+        case 'createdBoothBoys':
+          return <CreatedBoothBoysScreen {...screenProps} />;
+        case 'allAdmins':
+          return <AllAdminsScreen {...screenProps} />;
+        case 'allBoothBoys':
+          return <AllBoothBoysScreen {...screenProps} />;
+        case 'boothList':
+          return <BoothListScreen {...screenProps} />;
+        case 'boothSelection':
+          return <BoothSelectionScreen {...screenProps} />;
         default:
           return null;
       }
@@ -79,26 +134,41 @@ const App = () => {
       currentScreen,
       user
     };
-
-    if (user.role === 'super_admin') {
-      return <SuperAdminDashboardScreen {...navigationProps} />;
-    } else if (user.role === 'admin') {
-      return <AdminDashboardScreen {...navigationProps} />;
-    } else {
-      return <BoothBoyDashboard boothBoyInfo={user} onLogout={handleLogout} onMenuPress={() => setShowDrawer(true)} />;
+    {console.log("User Role:", user.role)}
+    switch (user.role) {
+      case 'super_admin':
+      case 'Admin':
+        return <SuperAdminDashboardScreen {...navigationProps} />;
+      case 'admin':
+        return <AdminDashboardScreen {...navigationProps} />;
+      case 'booth_boy':
+      case 'boothboy':
+        return <BoothBoyDashboard boothBoyInfo={user} onLogout={handleLogout} onMenuPress={() => setShowDrawer(true)} />;
+      default:
+        return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Unauthorized User Role: {user.role}</Text></View>;
     }
   };
 
   return (
-    <Provider store={store}>
+    <>
       {renderScreen()}
-      <SideDrawer
-        visible={showDrawer}
-        onClose={() => setShowDrawer(false)}
-        user={user}
-        onNavigate={handleNavigation}
-        onLogout={handleLogout} 
-      />
+      {user && showDrawer && 
+        <SideDrawer
+          visible={showDrawer}
+          onClose={() => setShowDrawer(false)}
+          user={user}
+          onNavigate={handleNavigation}
+          onLogout={handleLogout} 
+        />
+      }
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <Provider store={store}>
+      <AppContent />
     </Provider>
   );
 };

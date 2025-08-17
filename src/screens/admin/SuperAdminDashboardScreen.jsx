@@ -8,74 +8,105 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import FeatherIcon from 'react-native-vector-icons/Feather';
+import { useApiService } from '../../hooks/useApiService';
+import { apiClient } from '../../services/api/client';
 
 const { width } = Dimensions.get('window');
 
-// Text icons instead of lucide
-const icons = {
-  Users: '👥',
-  MapPin: '📍',
-  BarChart3: '📊',
-  Plus: '➕',
-  Globe: '🌐',
-  FileText: '📄',
-  Settings: '⚙️',
-  TrendingUp: '📈',
-  Shield: '🛡️',
-  Database: '🗄️',
-  Activity: '📊',
-};
-
 const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onMenuPress }) => {
+  const { user, token } = useSelector(state => state.auth);
+  const { getUsers, getVoters, getPollingBooths, loading } = useApiService();
   const [dashboardData, setDashboardData] = useState({
-    totalAdmins: 8,
-    totalBoothBoys: 156,
-    totalBooths: 342,
-    totalConstituencies: 12,
-    dataProgress: 85,
-    activeToday: 45,
-    recentActivities: [
-      { id: 1, action: 'Admin "Rajesh Kumar" created 3 booth boys', time: '1h ago', type: 'success' },
-      { id: 2, action: 'Data scraping completed for Constituency-5', time: '2h ago', type: 'info' },
-      { id: 3, action: 'New admin "Priya Singh" registered', time: '4h ago', type: 'success' },
-      { id: 4, action: 'Booth assignment updated in Zone-A', time: '6h ago', type: 'warning' },
-    ]
+    totalAdmins: 0,
+    totalBoothBoys: 0,
+    totalBooths: 0,
+    totalVoters: 0,
+    allUsers: [],
+    allVoters: [],
+    recentActivities: []
   });
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setDashboardData(prev => ({
-        ...prev,
-        activeToday: prev.activeToday + Math.floor(Math.random() * 10),
-      }));
-      setRefreshing(false);
-    }, 1000);
+  const loadDashboardData = async () => {
+    console.log('Dashboard - Loading data, token:', token);
+    try {
+      const [usersData, votersData] = await Promise.all([
+        getUsers(),
+        getVoters()
+      ]);
+      
+      // Load booths with body data
+      const boothsData = await apiClient.get('/general/booths', token, {
+        state_id: 'S04',
+        district_id: 'S0429',
+        assembly_id: '195'
+      });
+      
+      console.log('Dashboard - Users data:', usersData?.length);
+      console.log('Dashboard - Voters data:', votersData?.length);
+      console.log('Dashboard - Booths data:', boothsData?.length);
+      
+      const admins = usersData?.filter(u => u.role === 'admin' || u.role === 'super_admin') || [];
+      const boothBoys = usersData?.filter(u => u.role === 'booth_boy' || u.role === 'boothboy') || [];
+      
+      setDashboardData({
+        totalAdmins: admins.length,
+        totalBoothBoys: boothBoys.length,
+        totalBooths: boothsData?.length || 0,
+        totalVoters: votersData?.length || 0,
+        allUsers: usersData || [],
+        allVoters: votersData || [],
+        recentActivities: [
+          { id: 1, action: `${admins.length} admins in system`, time: 'Now', type: 'info' },
+          { id: 2, action: `${boothBoys.length} booth boys active`, time: 'Now', type: 'success' },
+          { id: 3, action: `${boothsData?.length || 0} booths available`, time: 'Now', type: 'info' }
+        ]
+      });
+    } catch (error) {
+      console.log('Dashboard - Error loading data:', error);
+    }
   };
 
-  const StatCard = ({ icon, title, value, color, onPress, subtitle }) => (
-    <TouchableOpacity style={[styles.statCard, { borderLeftColor: color }]} onPress={onPress}>
-      <View style={styles.statCardContent}>
-        <Text style={[styles.iconText, { color }]}>{icon}</Text>
-        <View style={styles.statInfo}>
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadDashboardData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const StatCard = ({ iconName, iconFamily = 'MaterialIcons', title, value, color, onPress }) => {
+    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+    return (
+      <TouchableOpacity style={styles.statCard} onPress={onPress}>
+        <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
+          <IconComponent name={iconName} size={24} color={color} />
+        </View>
+        <View style={styles.statContent}>
           <Text style={styles.statValue}>{value}</Text>
           <Text style={styles.statTitle}>{title}</Text>
-          {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
-  const QuickActionCard = ({ icon, title, description, color, onPress }) => (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
-      <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
-        <Text style={[styles.iconText, { color }]}>{icon}</Text>
-      </View>
-      <Text style={styles.actionTitle}>{title}</Text>
-      <Text style={styles.actionDescription}>{description}</Text>
-    </TouchableOpacity>
-  );
+  const QuickActionCard = ({ iconName, iconFamily = 'MaterialIcons', title, description, color, onPress }) => {
+    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+    return (
+      <TouchableOpacity style={[styles.actionCard, { borderColor: color + '30' }]} onPress={onPress}>
+        <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
+          <IconComponent name={iconName} size={28} color={color} />
+        </View>
+        <Text style={styles.actionTitle}>{title}</Text>
+        <Text style={styles.actionDescription}>{description}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const ActivityItem = ({ activity }) => {
     const getActivityColor = (type) => {
@@ -106,94 +137,96 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
     >
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <Icon name="menu" size={28} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.greeting}>Super Admin Portal</Text>
-          <Text style={styles.adminName}>System Overview</Text>
+          <Text style={styles.adminName}>Super Admin Portal</Text>
+          <Text style={styles.greeting}>System Overview & Analytics</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪</Text>
+          <View style={styles.logoutIconContainer}>
+            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+          </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.statsContainer}>
-        <StatCard
-          icon={icons.Shield}
-          title="Total Admins"
-          value={dashboardData.totalAdmins}
-          color="#8B5CF6"
-          subtitle="Across all constituencies"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.Users}
-          title="Total Booth Boys"
-          value={dashboardData.totalBoothBoys}
-          color="#3B82F6"
-          subtitle="Created by all admins"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.MapPin}
-          title="Total Booths"
-          value={dashboardData.totalBooths}
-          color="#10B981"
-          subtitle="Across all constituencies"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.Globe}
-          title="Constituencies"
-          value={dashboardData.totalConstituencies}
-          color="#F59E0B"
-          subtitle="Under management"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.BarChart3}
-          title="Data Progress"
-          value={`${dashboardData.dataProgress}%`}
-          color="#EF4444"
-          subtitle="Overall completion"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.Activity}
-          title="Active Today"
-          value={dashboardData.activeToday}
-          color="#06B6D4"
-          subtitle="Users online"
-          onPress={() => {}}
-        />
+        <View style={styles.statsRow}>
+          <StatCard
+            iconName="admin-panel-settings"
+            title="Total Admins"
+            value={dashboardData.totalAdmins}
+            color="#8B5CF6"
+            onPress={() => onNavigate('allAdmins')}
+          />
+          <StatCard
+            iconName="group"
+            title="Total Booth Boys"
+            value={dashboardData.totalBoothBoys}
+            color="#3B82F6"
+            onPress={() => onNavigate('allBoothBoys')}
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <StatCard
+            iconName="location-on"
+            title="Total Booths"
+            value={dashboardData.totalBooths}
+            color="#10B981"
+            onPress={() => onNavigate('boothSelection')}
+          />
+          <StatCard
+            iconName="public"
+            title="Constituencies"
+            value={dashboardData.totalConstituencies}
+            color="#F59E0B"
+            onPress={() => {}}
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <StatCard
+            iconName="bar-chart"
+            title="Data Progress"
+            value={`${dashboardData.dataProgress}%`}
+            color="#EF4444"
+            onPress={() => {}}
+          />
+          <StatCard
+            iconName="online-prediction"
+            title="Active Today"
+            value={dashboardData.activeToday}
+            color="#06B6D4"
+            onPress={() => {}}
+          />
+        </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Super Admin Actions</Text>
         <View style={styles.actionsGrid}>
           <QuickActionCard
-            icon={icons.Plus}
+            iconName="add"
             title="Create Admin"
             description="Add new admin user"
             color="#8B5CF6"
             onPress={() => onNavigate('createAdmin')}
           />
           <QuickActionCard
-            icon={icons.MapPin}
+            iconName="assignment"
             title="Assign Constituency"
             description="Manage admin areas"
             color="#10B981"
             onPress={() => onNavigate('assignConstituency')}
           />
           <QuickActionCard
-            icon={icons.Database}
+            iconName="storage"
             title="Data Scraper"
             description="Scrape voter data"
             color="#F59E0B"
             onPress={() => onNavigate('dataScraper')}
           />
           <QuickActionCard
-            icon={icons.FileText}
+            iconName="assessment"
             title="System Reports"
             description="View all reports"
             color="#EF4444"
@@ -257,10 +290,7 @@ const styles = StyleSheet.create({
   menuButton: {
     marginRight: 15,
   },
-  menuIcon: {
-    fontSize: 20,
-    color: '#374151',
-  },
+
   headerCenter: {
     flex: 1,
   },
@@ -275,21 +305,30 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   logoutButton: {
-    padding: 8,
+    padding: 4,
   },
-  logoutText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
+  logoutIconContainer: {
+    backgroundColor: '#EF4444',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  adminName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.5,
   },
   greeting: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
-  },
-  adminName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    marginTop: 2,
+    fontWeight: '500',
   },
   settingsButton: {
     padding: 8,
@@ -304,39 +343,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   statCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statCardContent: {
+    flex: 1,
+    marginHorizontal: 6,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  statInfo: {
-    marginLeft: 12,
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statContent: {
+    flex: 1,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 2,
   },
   statTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  statSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 2,
+    color: '#6B7280',
   },
   section: {
     paddingHorizontal: 20,
@@ -360,6 +405,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -454,9 +500,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  iconText: {
-    fontSize: 24,
-  },
+
 });
 
 export default SuperAdminDashboardScreen;

@@ -1,174 +1,185 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-const icons = {
-  User: '👤',
-  Mail: '📧',
-  Phone: '📱',
-  MapPin: '📍',
-  Lock: '🔒',
-  Eye: '👁️',
-  EyeOff: '🙈',
-  Save: '💾',
-  X: '✖️',
-};
+import { useSelector } from 'react-redux';
+import { apiClient } from '../../services/api/client';
+import { ENDPOINTS } from '../../services/api/config';
+import InputField from '../../components/common/InputField';
+import PasswordInputField from '../../components/common/PasswordInputField';
+import BoothSelectionScreen from './BoothSelectionScreen';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
+  const { user, token } = useSelector(state => state.auth);
+  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
-    fullName: '',
+    full_name: '',
     email: '',
     phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
     username: '',
     password: '',
     confirmPassword: '',
+    role: 'booth_boy',
+    assigned_booths: [],
   });
   
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showBoothSelection, setShowBoothSelection] = useState(false);
+
+  const handleBoothsSelected = (booths) => {
+    const boothIds = booths.map(booth => booth.partId);
+    handleFieldChange('assigned_booths', boothIds);
+    setShowBoothSelection(false);
+  };
+
+  if (showBoothSelection) {
+    return (
+      <BoothSelectionScreen
+        onBack={() => setShowBoothSelection(false)}
+        onBoothsSelected={handleBoothsSelected}
+      />
+    );
+  }
+  
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touched, setTouched] = useState({});
+
+
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'full_name':
+        return !value.trim() ? 'Full name is required' : 
+               value.trim().length < 2 ? 'Full name must be at least 2 characters' : '';
+      case 'email':
+        return !value ? 'Email is required' :
+               !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Invalid email format' : '';
+      case 'phone':
+        return !value ? 'Phone is required' :
+               !/^[6-9]\d{9}$/.test(value.replace(/\D/g, '')) ? 'Invalid phone number' : '';
+      case 'username':
+        return !value ? 'Username is required' :
+               value.length < 4 ? 'Username must be at least 4 characters' :
+               !/^[a-zA-Z0-9_]+$/.test(value) ? 'Username can only contain letters, numbers, and underscores' : '';
+      case 'password':
+        return !value ? 'Password is required' :
+               value.length < 8 ? 'Password must be at least 8 characters' :
+               !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value) ? 'Password must contain uppercase, lowercase, and number' : '';
+      case 'confirmPassword':
+        return !value ? 'Please confirm password' :
+               value !== formData.password ? 'Passwords do not match' : '';
+      case 'assigned_booths':
+        return value.length === 0 ? 'Please assign at least one booth' : '';
+      default:
+        return '';
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Required field validations
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/[^\d]/g, ''))) {
-      newErrors.phone = 'Invalid phone number';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 4) {
-      newErrors.username = 'Username must be at least 4 characters';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
+    Object.keys(formData).forEach(key => {
+      if (key !== 'role') {
+        const error = validateField(key, formData[key]);
+        if (error) newErrors[key] = error;
+      }
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      Alert.alert(
-        'Success!',
-        `Booth boy "${formData.fullName}" has been created successfully.`,
-        [
-          {
-            text: 'Create Another',
-            onPress: () => {
-              setFormData({
-                fullName: '',
-                email: '',
-                phone: '',
-                address: '',
-                city: '',
-                state: '',
-                pincode: '',
-                username: '',
-                password: '',
-                confirmPassword: '',
-              });
-              setErrors({});
-            }
-          },
-          {
-            text: 'Go to List',
-            onPress: () => onBack()
-          }
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create booth boy. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (touched[field]) {
+      const error = validateField(field, value);
+      if (!error) {
+        setErrors(prev => ({ ...prev, [field]: '' }));
+      }
     }
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    icon: Icon, 
-    error,
-    secureTextEntry = false,
-    showPasswordToggle = false,
-    onTogglePassword,
-    showPassword,
-    keyboardType = 'default',
-    multiline = false
-  }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={[styles.inputWrapper, error && styles.inputError]}>
-        <Text style={[styles.iconText, { color: error ? '#EF4444' : '#6B7280' }]}>{icon}</Text>
-        <TextInput
-          style={[styles.textInput, multiline && styles.multilineInput]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          numberOfLines={multiline ? 3 : 1}
-        />
-        {showPasswordToggle && (
-          <TouchableOpacity onPress={onTogglePassword}>
-            <Text style={styles.iconText}>{showPassword ? icons.EyeOff : icons.Eye}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </View>
-  );
+  const handleFieldBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field]);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fix all errors before submitting.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { confirmPassword, ...userData } = formData;
+      await apiClient.post(ENDPOINTS.USERS.CREATE, userData, token);
+      
+      Alert.alert(
+        'Success!',
+        `Booth Boy "${formData.full_name}" has been created successfully.`,
+        [
+          { 
+            text: 'Create Another', 
+            onPress: () => {
+              setFormData({
+                full_name: '',
+                email: '',
+                phone: '',
+                username: '',
+                password: '',
+                confirmPassword: '',
+                role: 'booth_boy',
+                assigned_booths: [],
+              });
+              setErrors({});
+              setTouched({});
+            }
+          },
+          { text: 'Go Back', onPress: () => onBack() }
+        ]
+      );
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to create booth boy. Please try again.';
+      if (error.message?.includes('username')) {
+        setErrors(prev => ({ ...prev, username: 'Username already exists' }));
+      } else if (error.message?.includes('email')) {
+        setErrors(prev => ({ ...prev, email: 'Email already exists' }));
+      }
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isFormValid = () => {
+    const hasAllFields = formData.full_name && formData.email && formData.phone && 
+      formData.username && formData.password && formData.confirmPassword && 
+      formData.assigned_booths.length > 0;
+    
+    const hasNoErrors = Object.values(errors).every(error => !error);
+    
+    return hasAllFields && hasNoErrors;
+  };
+
+  const getFieldStyle = (fieldName) => {
+    if (errors[fieldName]) {
+      return styles.inputError;
+    } else if (touched[fieldName] && formData[fieldName] && !errors[fieldName]) {
+      return styles.inputSuccess;
+    }
+    return {};
+  };
+
+
 
   return (
     <KeyboardAvoidingView 
@@ -180,11 +191,12 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
           style={styles.backButton}
           onPress={onBack}
         >
-          <Text style={styles.iconText}>{icons.X}</Text>
+          <Icon name="close" size={24} color="#374151" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Booth Boy</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪 Logout</Text>
+          <Icon name="power-settings-new" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
 
@@ -193,129 +205,94 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Personal Information Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           
           <InputField
             label="Full Name *"
-            value={formData.fullName}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, fullName: text }))}
+            value={formData.full_name}
+            onChangeText={(text) => handleFieldChange('full_name', text)}
+            onBlur={() => handleFieldBlur('full_name')}
             placeholder="Enter full name"
-            icon={User}
-            error={errors.fullName}
+            style={getFieldStyle('full_name')}
           />
+          {errors.full_name && <Text style={styles.errorText}>{errors.full_name}</Text>}
 
           <InputField
             label="Email Address *"
             value={formData.email}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+            onChangeText={(text) => handleFieldChange('email', text.toLowerCase())}
+            onBlur={() => handleFieldBlur('email')}
             placeholder="Enter email address"
-            icon={Mail}
-            error={errors.email}
             keyboardType="email-address"
+            style={getFieldStyle('email')}
           />
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
           <InputField
             label="Phone Number *"
             value={formData.phone}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
-            placeholder="Enter phone number"
-            icon={Phone}
-            error={errors.phone}
+            onChangeText={(text) => handleFieldChange('phone', text.replace(/\D/g, ''))}
+            onBlur={() => handleFieldBlur('phone')}
+            maxLength={10}
+            placeholder="Enter 10-digit phone number"
             keyboardType="phone-pad"
+            style={getFieldStyle('phone')}
           />
+          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
         </View>
 
-        {/* Address Information Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address Information</Text>
-          
-          <InputField
-            label="Address *"
-            value={formData.address}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, address: text }))}
-            placeholder="Enter complete address"
-            icon={MapPin}
-            error={errors.address}
-            multiline={true}
-          />
-
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="City"
-                value={formData.city}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, city: text }))}
-                placeholder="Enter city"
-                icon={MapPin}
-                error={errors.city}
-              />
-            </View>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="State"
-                value={formData.state}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, state: text }))}
-                placeholder="Enter state"
-                icon={MapPin}
-                error={errors.state}
-              />
-            </View>
-          </View>
-
-          <InputField
-            label="PIN Code"
-            value={formData.pincode}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, pincode: text }))}
-            placeholder="Enter PIN code"
-            icon={MapPin}
-            error={errors.pincode}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Account Setup Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Setup</Text>
           
           <InputField
             label="Username *"
             value={formData.username}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, username: text }))}
-            placeholder="Enter username"
-            icon={User}
-            error={errors.username}
+            onChangeText={(text) => handleFieldChange('username', text.toLowerCase())}
+            onBlur={() => handleFieldBlur('username')}
+            placeholder="Enter username (letters, numbers, underscore)"
+            style={getFieldStyle('username')}
           />
+          {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
 
-          <InputField
+          <PasswordInputField
             label="Password *"
             value={formData.password}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
-            placeholder="Enter password"
-            icon={Lock}
+            onChangeText={(text) => handleFieldChange('password', text)}
+            onBlur={() => handleFieldBlur('password')}
+            placeholder="Must contain: A-Z, a-z, 0-9, min 8 chars"
+            style={getFieldStyle('password')}
             error={errors.password}
-            secureTextEntry={!showPassword}
-            showPasswordToggle={true}
-            showPassword={showPassword}
-            onTogglePassword={() => setShowPassword(!showPassword)}
           />
 
-          <InputField
+          <PasswordInputField
             label="Confirm Password *"
             value={formData.confirmPassword}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
-            placeholder="Confirm password"
-            icon={Lock}
+            onChangeText={(text) => handleFieldChange('confirmPassword', text)}
+            onBlur={() => handleFieldBlur('confirmPassword')}
+            placeholder="Re-enter password"
+            style={getFieldStyle('confirmPassword')}
             error={errors.confirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            showPasswordToggle={true}
-            showPassword={showConfirmPassword}
-            onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
           />
         </View>
 
-        {/* Permissions Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Booth Assignment *</Text>
+          <TouchableOpacity 
+            style={styles.boothSelectionButton}
+            onPress={() => setShowBoothSelection(true)}
+          >
+            <Icon name="location-on" size={20} color="#007AFF" />
+            <Text style={styles.boothSelectionText}>
+              {formData.assigned_booths.length > 0 
+                ? `${formData.assigned_booths.length} booths selected`
+                : 'Select Booths'}
+            </Text>
+            <Icon name="arrow-forward-ios" size={16} color="#007AFF" />
+          </TouchableOpacity>
+          {errors.assigned_booths && <Text style={styles.errorText}>{errors.assigned_booths}</Text>}
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Default Permissions</Text>
           <View style={styles.permissionsInfo}>
@@ -330,13 +307,13 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submittingButton]}
+          style={[styles.submitButton, (loading || !isFormValid()) && styles.submittingButton]}
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={loading || !isFormValid()}
         >
-          <Text style={[styles.iconText, { color: '#FFFFFF' }]}>{icons.Save}</Text>
+          <Icon name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.submitButtonText}>
-            {isSubmitting ? 'Creating...' : 'Create Booth Boy'}
+            {loading ? 'Creating Booth Boy...' : 'Create Booth Boy'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -347,17 +324,22 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   backButton: {
     padding: 4,
@@ -368,86 +350,45 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   logoutButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: '#EF4444',
-    borderRadius: 8,
+    borderRadius: 12,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   logoutText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '500',
   },
-  iconText: {
-    fontSize: 18,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
   section: {
-    marginTop: 24,
+    marginTop: 32,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 16,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    marginLeft: 8,
-    marginRight: 8,
-  },
-  multilineInput: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  halfWidth: {
-    width: '48%',
-  },
-  permissionsInfo: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 16,
-  },
-  permissionItem: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 8,
-    lineHeight: 20,
   },
   footer: {
     paddingHorizontal: 20,
@@ -461,8 +402,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 8,
+    paddingVertical: 18,
+    borderRadius: 12,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   submittingButton: {
     backgroundColor: '#9CA3AF',
@@ -472,6 +418,87 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
+    backgroundColor: '#FEF2F2',
+  },
+  inputSuccess: {
+    borderColor: '#10B981',
+    borderWidth: 2,
+    backgroundColor: '#F0FDF4',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 15,
+    marginLeft: 4,
+  },
+  permissionsInfo: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 16,
+  },
+  permissionItem: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  dropdownContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dropdownOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  selectedOption: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  selectedText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  helperText: {
+    color: '#6B7280',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  boothSelectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8FF',
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  boothSelectionText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });
 

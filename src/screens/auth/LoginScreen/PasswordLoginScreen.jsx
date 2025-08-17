@@ -1,6 +1,8 @@
 // screens/PasswordLoginScreen.js
 import React, { useState } from 'react';
 import { ScrollView, View, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../../../store/authSlice';
 import LoginCard from '../../../components/common/LoginCard';
 import BackButton from '../../../components/common/BackButton';
 import ScreenHeader from '../../../components/common/ScreenHeader';
@@ -22,64 +24,35 @@ const COLORS = {
 };
 
 const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSuccess, selectedRole }) => {
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const { isLoading, error } = useSelector(state => state.auth);
   const [loginMethod, setLoginMethod] = useState('password');
 
-  const dummyLoginWithPassword = async (username, password) => {
-    console.log(`Simulating login for: ${username}`);
-    await new Promise((resolve) => setTimeout(resolve, 600)); // simulate delay
-
-    // Demo credentials from the original LoginScreen
-    const validCredentials = {
-      'super_admin': 'super123',
-      'admin1': 'admin123', 
-      'booth1': 'booth123',
-      'testuser': 'password123'
-    };
-
-    if (validCredentials[username] && validCredentials[username] === password) {
-      return {
-        token: 'dummy-token',
-        user: {
-          id: 1,
-          name: username === 'super_admin' ? 'Super Admin' :
-                username === 'admin1' ? 'Admin' :
-                username === 'booth1' ? 'Booth Boy' : 'Test User',
-          username,
-        },
-      };
-    } else {
-      throw new Error('Invalid username or password');
-    }
-  };
-
   const handlePasswordLogin = async () => {
-    setLoading(true);
     try {
-      const result = await dummyLoginWithPassword(loginData.username, loginData.password);
-      console.warn('Login successful:', result);
-      
-      // Create user data based on selected role
-      const userData = {
+      const credentials = {
         username: loginData.username,
-        role: selectedRole,
-        name: result.user.name,
+        password: loginData.password,
+        selectedRole: selectedRole
+      };
+      
+      console.warn ("logninData", credentials);
+
+      const result = await dispatch(loginUser(credentials)).unwrap();
+      
+      const userData = {
+        ...result,
         ...(selectedRole === 'booth_boy' && {
-          id: 'BB001',
-          phone: '+91 9876543210',
-          assignedBooths: ['B001', 'B002', 'B003'],
-          constituency: 'Constituency-1',
-          area: 'North Zone',
-          totalVoters: 2847
+          assignedBooths: result.assigned_booths || [],
+          constituency: result.constituency,
+          area: result.area,
+          totalVoters: result.totalVoters || 0
         })
       };
       
       onLoginSuccess(userData);
     } catch (error) {
-      console.error('Login failed:', error.message);
-      Alert.alert('Login Failed', error.message);
-    } finally {
-      setLoading(false);
+      Alert.alert('Login Failed', error.message || 'Invalid credentials');
     }
   };
 
@@ -135,11 +108,11 @@ const PasswordLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSu
               </TouchableOpacity>
 
               <GradientButton
-                title={loading ? 'Logging in...' : 'Login Securely'}
+                title={isLoading ? 'Logging in...' : 'Login Securely'}
                 onPress={handlePasswordLogin}
                 colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
-                disabled={!isFormValid || loading}
-                loading={loading}
+                disabled={!isFormValid || isLoading}
+                loading={isLoading}
               />
             </>
           ) : (

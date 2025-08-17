@@ -1,6 +1,8 @@
 // screens/AdminLoginScreen.js
 import React, { useState } from 'react';
 import { ScrollView, View, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../../../store/authSlice';
 import LoginCard from '../../../components/common/LoginCard';
 import BackButton from '../../../components/common/BackButton';
 import ScreenHeader from '../../../components/common/ScreenHeader';
@@ -21,54 +23,30 @@ const COLORS = {
 };
 
 const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSuccess, selectedRole }) => {
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const { isLoading, error } = useSelector(state => state.auth);
   const [loginMethod, setLoginMethod] = useState('password');
 
-  const dummyAdminLogin = async (username, password) => {
-    console.log(`Admin login attempt: ${username}`);
-    await new Promise((resolve) => setTimeout(resolve, 600)); // simulate delay
-
-    // Support multiple admin credentials
-    const validAdmins = {
-      'admin': 'admin123',
-      'admin1': 'admin123',
-      'super_admin': 'super123'
-    };
-
-    if (validAdmins[username] && validAdmins[username] === password) {
-      return {
-        token: 'admin-token',
-        user: {
-          id: username === 'super_admin' ? 0 : 1,
-          role: username === 'super_admin' ? 'super_admin' : 'admin',
-          username,
-        },
-      };
-    } else {
-      throw new Error('Invalid admin credentials');
-    }
-  };
-
   const handleAdminLogin = async () => {
-    setLoading(true);
     try {
-      const result = await dummyAdminLogin(loginData.username, loginData.password);
-      console.warn('Admin login successful:', result);
-      
-      // Create user data for admin login
-      const userData = {
+      let credentials = {
         username: loginData.username,
-        role: selectedRole,
-        name: selectedRole === 'super_admin' ? 'Super Admin' : 'Admin',
-        id: result.user.id
+        password: loginData.password,
+        selectedRole: selectedRole
+      };
+      
+      console.warn("logninData", credentials);
+      
+      const result = await dispatch(loginUser(credentials)).unwrap();
+      
+      const userData = {
+        ...result,
+        name: result.fullname || (selectedRole === 'super_admin' ? 'Super Admin' : 'Admin')
       };
       
       onLoginSuccess(userData);
     } catch (error) {
-      console.error('Admin login failed:', error.message);
-      Alert.alert('Login Failed', error.message);
-    } finally {
-      setLoading(false);
+      Alert.alert('Login Failed', error.message || 'Invalid admin credentials');
     }
   };
 
@@ -120,11 +98,11 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSucce
               />
 
               <GradientButton
-                title={loading ? 'Logging in...' : 'Login as Admin'}
+                title={isLoading ? 'Logging in...' : 'Login as Admin'}
                 onPress={handleAdminLogin}
                 colors={[COLORS.SECONDARY, COLORS.SECONDARYDark]}
-                disabled={!isFormValid || loading}
-                loading={loading}
+                disabled={!isFormValid || isLoading}
+                loading={isLoading}
               />
             </>
           ) : (

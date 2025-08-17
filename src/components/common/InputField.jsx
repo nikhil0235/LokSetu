@@ -6,6 +6,7 @@ const InputField = ({
   placeholder, 
   value, 
   onChangeText, 
+  onBlur,
   secureTextEntry = false,
   keyboardType = 'default',
   maxLength,
@@ -21,6 +22,7 @@ const InputField = ({
         placeholderTextColor="#888"
         value={value}
         onChangeText={onChangeText}
+        onBlur={onBlur}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         maxLength={maxLength}

@@ -12,15 +12,15 @@ const FeatureItem = ({ icon, text }) => (
 
 const FeaturesSection = () => {
   const features = [
-    { icon: '📊', text: 'Real-time Constituency Analytics' },
-    { icon: '🗳️', text: 'Digital Voting Insights' },
-    { icon: '🤝', text: 'Direct Citizen Connect' },
-    { icon: '🔒', text: 'Secure & Transparent' },
+    { icon: '📊', text: 'Live Election Monitoring' },
+    { icon: '🔒', text: 'Bank-Grade Security' },
+    { icon: '⚡', text: 'Instant Data Sync' },
+    { icon: '🌍', text: 'Multi-Language Support' },
   ];
 
   return (
     <View style={styles.featuresSection}>
-      <Text style={styles.featuresTitle}>Why Politicians Choose LokSetu?</Text>
+      <Text style={styles.featuresTitle}>Trusted by Election Officials Nationwide</Text>
       <View style={styles.featuresList}>
         {features.map((feature, index) => (
           <FeatureItem key={index} icon={feature.icon} text={feature.text} />
@@ -37,9 +37,9 @@ const styles = StyleSheet.create({
     paddingTop: 25,
   },
   featuresTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#1C1C1E',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -58,8 +58,9 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 16,
-    color: '#555',
+    color: '#374151',
     flex: 1,
+    fontWeight: '500',
   },
 });
 

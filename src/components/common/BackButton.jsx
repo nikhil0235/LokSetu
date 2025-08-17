@@ -1,27 +1,41 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
 
-const BackButton = ({ onPress, title = "← Back to Options" }) => {
+const BackButton = ({ onPress }) => {
   return (
     <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Text style={styles.backButtonText}>{title}</Text>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
+        style={styles.buttonGradient}
+      >
+        <Icon name="chevron-back" size={24} color="#667eea" />
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    elevation: 8,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    marginBottom: 10,
   },
-  backButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600',
+  buttonGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(102, 126, 234, 0.2)',
   },
 });
 

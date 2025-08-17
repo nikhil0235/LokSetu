@@ -9,15 +9,7 @@ import {
 import VoterListScreen from './VoterListScreen';
 import FilterModal from './components/FilterModal';
 import BoothBoyProfile from './components/BoothBoyProfile';
-
-const icons = {
-  Filter: '🔍',
-  Users: '👥',
-  MapPin: '📍',
-  Calendar: '📅',
-  Shield: '🛡️',
-  User: '👤',
-};
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
   const [showVoterList, setShowVoterList] = useState(false);
@@ -44,12 +36,12 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
   };
 
   const filterOptions = [
-    { id: 'booth', title: 'Booth Wise', icon: icons.MapPin, color: '#3B82F6' },
-    { id: 'address', title: 'Address Wise', icon: icons.MapPin, color: '#10B981' },
-    { id: 'age', title: 'Age Wise', icon: icons.Calendar, color: '#F59E0B' },
-    { id: 'caste', title: 'Caste Wise', icon: icons.Users, color: '#8B5CF6' },
-    { id: 'verification', title: 'Verification Status', icon: icons.Shield, color: '#EF4444' },
-    { id: 'gender', title: 'Gender Wise', icon: icons.User, color: '#EC4899' }
+    { id: 'booth', title: 'Booth Wise', iconName: 'location-on', color: '#3B82F6' },
+    { id: 'address', title: 'Address Wise', iconName: 'home', color: '#10B981' },
+    { id: 'age', title: 'Age Wise', iconName: 'cake', color: '#F59E0B' },
+    { id: 'caste', title: 'Caste Wise', iconName: 'group', color: '#8B5CF6' },
+    { id: 'verification', title: 'Verification Status', iconName: 'verified', color: '#EF4444' },
+    { id: 'gender', title: 'Gender Wise', iconName: 'person', color: '#EC4899' }
   ];
 
   const handleFilterSelect = (filterId) => {
@@ -80,18 +72,20 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-            <Text style={styles.menuIcon}>☰</Text>
+            <Icon name="menu" size={28} color="#374151" />
           </TouchableOpacity>
           <View style={styles.profilePic}>
             <Text style={styles.profileText}>{defaultBoothBoyInfo.name.charAt(0)}</Text>
           </View>
         </View>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Booth Boy Dashboard</Text>
-          <Text style={styles.headerSubtitle}>{defaultBoothBoyInfo.constituency}</Text>
+          <Text style={styles.headerTitle}>{defaultBoothBoyInfo.name}</Text>
+          <Text style={styles.headerSubtitle}>Booth Boy Dashboard - {defaultBoothBoyInfo.constituency}</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪</Text>
+          <View style={styles.logoutIconContainer}>
+            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -120,7 +114,7 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
                 onPress={() => handleFilterSelect(option.id)}
               >
                 <View style={[styles.filterIcon, { backgroundColor: option.color + '20' }]}>
-                  <Text style={[styles.iconText, { color: option.color }]}>{option.icon}</Text>
+                  <Icon name={option.iconName} size={20} color={option.color} />
                 </View>
                 <Text style={styles.filterTitle}>{option.title}</Text>
               </TouchableOpacity>
@@ -154,14 +148,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   menuButton: { marginRight: 10 },
-  menuIcon: { fontSize: 20, color: '#374151' },
+
   profilePic: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
   profileText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-  headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2 },
-  logoutButton: { padding: 8 },
-  logoutText: { fontSize: 20 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937', letterSpacing: 0.5 },
+  headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2, fontWeight: '500' },
+  logoutButton: { padding: 4 },
+  logoutIconContainer: { backgroundColor: '#EF4444', borderRadius: 20, padding: 8, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
   content: { flex: 1, padding: 20 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 15 },
   statsSection: { marginBottom: 30 },
@@ -173,7 +167,7 @@ const styles = StyleSheet.create({
   filtersGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   filterCard: { backgroundColor: '#FFFFFF', padding: 15, borderRadius: 12, width: '48%', marginBottom: 15, borderWidth: 1, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   filterIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  iconText: { fontSize: 18 },
+
   filterTitle: { fontSize: 14, fontWeight: '600', color: '#111827', textAlign: 'center' },
   allVotersButton: { backgroundColor: '#3B82F6', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 20 },
   allVotersButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },

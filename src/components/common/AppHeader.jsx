@@ -15,7 +15,12 @@ const AppHeader = () => {
         </View>
         <Text style={styles.appName}>LokSetu</Text>
         <Text style={styles.appNameHindi}>लोक सेतु</Text>
-        <Text style={styles.tagline}>India's Digital Election Engine</Text>
+        <Text style={styles.tagline}>Trusted by Election Commission of India</Text>
+        <View style={styles.trustBadge}>
+          <Text style={styles.trustText}>✓ Secure</Text>
+          <Text style={styles.trustText}>✓ Verified</Text>
+          <Text style={styles.trustText}>✓ Official</Text>
+        </View>
       </View>
     </LinearGradient>
   );
@@ -23,11 +28,16 @@ const AppHeader = () => {
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingTop: 45,
+    paddingBottom: 25,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   logoContainer: {
     alignItems: 'center',
@@ -57,9 +67,22 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.95,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 15,
+  },
+  trustText: {
+    fontSize: 12,
     color: '#FFFFFF',
     opacity: 0.9,
+    fontWeight: '500',
   },
 });
 

@@ -8,23 +8,16 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import FeatherIcon from 'react-native-vector-icons/Feather';
 
 const { width } = Dimensions.get('window');
 
-const icons = {
-  Users: '👥',
-  MapPin: '📍',
-  BarChart3: '📊',
-  Plus: '➕',
-  Globe: '🌐',
-  FileText: '📄',
-  Settings: '⚙️',
-  TrendingUp: '📈',
-};
-
 const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onMenuPress }) => {
+  const { user } = useSelector(state => state.auth);
   const [dashboardData, setDashboardData] = useState({
-    totalBoothBoys: 23,
+    totalBoothBoys: user?.created_users?.length || 0,
     totalBooths: 45,
     dataProgress: 78,
     activeToday: 12,
@@ -42,32 +35,48 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     setTimeout(() => {
       setDashboardData(prev => ({
         ...prev,
+        totalBoothBoys: user?.created_users?.length || 0,
         activeToday: prev.activeToday + Math.floor(Math.random() * 5),
       }));
       setRefreshing(false);
     }, 1000);
   };
 
-  const StatCard = ({ icon, title, value, color, onPress }) => (
-    <TouchableOpacity style={[styles.statCard, { borderLeftColor: color }]} onPress={onPress}>
-      <View style={styles.statCardContent}>
-        <Text style={[styles.iconText, { color }]}>{icon}</Text>
-        <View style={styles.statInfo}>
+  // Update booth boys count when user data changes
+  useEffect(() => {
+    setDashboardData(prev => ({
+      ...prev,
+      totalBoothBoys: user?.created_users?.length || 0,
+    }));
+  }, [user?.created_users]);
+
+  const StatCard = ({ iconName, iconFamily = 'MaterialIcons', title, value, color, onPress }) => {
+    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+    return (
+      <TouchableOpacity style={styles.statCard} onPress={onPress}>
+        <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
+          <IconComponent name={iconName} size={24} color={color} />
+        </View>
+        <View style={styles.statContent}>
           <Text style={styles.statValue}>{value}</Text>
           <Text style={styles.statTitle}>{title}</Text>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
-  const QuickActionCard = ({ icon, title, color, onPress }) => (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
-      <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
-        <Text style={[styles.iconText, { color }]}>{icon}</Text>
-      </View>
-      <Text style={styles.actionTitle}>{title}</Text>
-    </TouchableOpacity>
-  );
+  const QuickActionCard = ({ iconName, iconFamily = 'MaterialIcons', title, description, color, onPress }) => {
+    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+    return (
+      <TouchableOpacity style={[styles.actionCard, { borderColor: color + '30' }]} onPress={onPress}>
+        <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
+          <IconComponent name={iconName} size={28} color={color} />
+        </View>
+        <Text style={styles.actionTitle}>{title}</Text>
+        <Text style={styles.actionDescription}>{description}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const ActivityItem = ({ activity }) => {
     const getActivityColor = (type) => {
@@ -98,74 +107,84 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     >
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <Text style={styles.menuIcon}>☰</Text>
+          <Icon name="menu" size={28} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.greeting}>Welcome back!</Text>
-          <Text style={styles.adminName}>Party Admin</Text>
+          <Text style={styles.adminName}>{user?.full_name || user?.username || 'Admin'}</Text>
+          <Text style={styles.greeting}>Admin Dashboard & Controls</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪</Text>
+          <View style={styles.logoutIconContainer}>
+            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+          </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.statsContainer}>
-        <StatCard
-          icon={icons.Users}
-          title="Total Booth Boys"
-          value={dashboardData.totalBoothBoys}
-          color="#3B82F6"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.MapPin}
-          title="Total Booths"
-          value={dashboardData.totalBooths}
-          color="#10B981"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.BarChart3}
-          title="Data Progress"
-          value={`${dashboardData.dataProgress}%`}
-          color="#F59E0B"
-          onPress={() => {}}
-        />
-        <StatCard
-          icon={icons.TrendingUp}
-          title="Active Today"
-          value={dashboardData.activeToday}
-          color="#8B5CF6"
-          onPress={() => {}}
-        />
+        <View style={styles.statsRow}>
+          <StatCard
+            iconName="group"
+            title="Total Booth Boys"
+            value={dashboardData.totalBoothBoys}
+            color="#3B82F6"
+            onPress={() => onNavigate('createdBoothBoys')}
+          />
+          <StatCard
+            iconName="location-on"
+            title="Total Booths"
+            value={dashboardData.totalBooths}
+            color="#10B981"
+            onPress={() => onNavigate('boothList')}
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <StatCard
+            iconName="bar-chart"
+            title="Data Progress"
+            value={`${dashboardData.dataProgress}%`}
+            color="#F59E0B"
+            onPress={() => {}}
+          />
+          <StatCard
+            iconName="online-prediction"
+            title="Active Today"
+            value={dashboardData.activeToday}
+            color="#8B5CF6"
+            onPress={() => {}}
+          />
+        </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <QuickActionCard
-            icon={icons.Plus}
+            iconName="add"
             title="Create Booth Boy"
+            description="Add new booth boy"
             color="#3B82F6"
             onPress={() => onNavigate('createBoothBoy')}
           />
           <QuickActionCard
-            icon={icons.MapPin}
+            iconName="assignment"
             title="Assign Booths"
+            description="Manage booth assignments"
             color="#10B981"
             onPress={() => onNavigate('assignBooths')}
           />
           <QuickActionCard
-            icon={icons.Globe}
-            title="Data Scraper"
-            color="#F59E0B"
-            onPress={() => onNavigate('dataScraper')}
-          />
-          <QuickActionCard
-            icon={icons.FileText}
+            iconName="assessment"
             title="Reports"
+            description="View analytics"
             color="#8B5CF6"
             onPress={() => onNavigate('reports')}
+          />
+          <QuickActionCard
+            iconName="settings"
+            title="Settings"
+            description="Admin preferences"
+            color="#F59E0B"
+            onPress={() => {}}
           />
         </View>
       </View>
@@ -220,10 +239,7 @@ const styles = StyleSheet.create({
   menuButton: {
     marginRight: 15,
   },
-  menuIcon: {
-    fontSize: 20,
-    color: '#374151',
-  },
+
   headerCenter: {
     flex: 1,
   },
@@ -238,21 +254,30 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   logoutButton: {
-    padding: 8,
+    padding: 4,
   },
-  logoutText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
+  logoutIconContainer: {
+    backgroundColor: '#EF4444',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  adminName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.5,
   },
   greeting: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
-  },
-  adminName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    marginTop: 2,
+    fontWeight: '500',
   },
   settingsButton: {
     padding: 8,
@@ -267,34 +292,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   statCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statCardContent: {
+    padding: 12,
+    flex: 1,
+    marginHorizontal: 6,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  statInfo: {
-    marginLeft: 12,
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  statContent: {
+    flex: 1,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    marginTop: 2,
+    marginTop: 1,
   },
   section: {
     paddingHorizontal: 20,
@@ -318,6 +354,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -336,6 +373,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#111827',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  actionDescription: {
+    fontSize: 12,
+    color: '#6B7280',
     textAlign: 'center',
   },
   activitiesContainer: {
@@ -417,9 +460,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-  iconText: {
-    fontSize: 24,
-  },
+
 });
 
 export default AdminDashboardScreen;

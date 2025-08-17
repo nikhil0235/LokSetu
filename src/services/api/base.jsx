@@ -1,12 +1,11 @@
 import axios from 'axios';
 import { store } from '../../store';
-import { addNotification } from '../../store/slices/uiSlice';
-import { logoutUser } from '../../store/slices/authSlice';
+import { API_CONFIG } from './config';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || '/api',
-  timeout: 30000,
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -47,17 +46,12 @@ apiClient.interceptors.response.use(
       }
     }
     
-    // Show error notification
-    const message = error.response?.data?.message || error.message;
-    store.dispatch(addNotification({
-      type: 'error',
-      title: 'API Error',
-      message,
-      duration: 5000,
-    }));
+    // Log error for debugging
+    console.error('API Error:', error.response?.data || error.message);
     
     return Promise.reject(error);
   }
 );
 
+export { apiClient };
 export default apiClient;

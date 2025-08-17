@@ -12,14 +12,13 @@ import {
 import AppHeader from './components/common/AppHeader';
 import AppFooter from './components/common/AppFooter';
 import MainLoginScreen from './screens/auth/LoginScreen/MainLoginScreen';
-import OTPLoginScreen from './screens/auth/LoginScreen/OTPLoginScreen';
-import PasswordLoginScreen from './screens/auth/LoginScreen/PasswordLoginScreen';
+import UnifiedLoginScreen from './screens/auth/UnifiedLoginScreen';
 import ForgotPasswordScreen from './screens/auth/LoginScreen/ForgotPasswordScreen';
-import AdminLoginScreen from './screens/auth/LoginScreen/AdminLoginScreen';
+import ResetPasswordScreen from './screens/auth/LoginScreen/ResetPasswordScreen';
 
 
-const LokSetuLogin = ({ onLoginSuccess }) => {
-  const [currentScreen, setCurrentScreen] = useState('main'); // 'main', 'password', 'otp'
+const LokSetuLogin = ({ onLoginSuccess, resetToken }) => {
+  const [currentScreen, setCurrentScreen] = useState(resetToken ? 'resetPassword' : 'main'); // 'main', 'password', 'otp', 'resetPassword'
   const [showHeader, setShowHeader] = useState(true);
   const [selectedRole, setSelectedRole] = useState('super_admin');
 
@@ -29,8 +28,6 @@ const LokSetuLogin = ({ onLoginSuccess }) => {
     phoneNumber: '',
     otp: '',
   });
-
-  
 
 
   const updateLoginData = (field, value) => {
@@ -54,14 +51,14 @@ const LokSetuLogin = ({ onLoginSuccess }) => {
     };
 
     switch (currentScreen) {
+      case 'login':
       case 'password':
-        return <PasswordLoginScreen {...screenProps} />;
       case 'otp':
-        return <OTPLoginScreen {...screenProps} />;
+        return <UnifiedLoginScreen {...screenProps} />;
       case 'forgotPassword' :
         return <ForgotPasswordScreen {...screenProps} />;
-      case 'adminlogin':
-        return <AdminLoginScreen {...screenProps} />;
+      case 'resetPassword':
+        return <ResetPasswordScreen {...screenProps} resetToken={resetToken} />;
       default:
         return <MainLoginScreen {...screenProps} />;
     }
@@ -71,8 +68,7 @@ const LokSetuLogin = ({ onLoginSuccess }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#FF6B35" />
       
-      {/* Header with Gradient */}
-      {showHeader && <AppHeader />}
+
 
 
       {/* Main Content */}
