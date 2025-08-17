@@ -8,84 +8,59 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import FeatherIcon from 'react-native-vector-icons/Feather';
-import { useApiService } from '../../hooks/useApiService';
-import { apiClient } from '../../services/api/client';
+import { useSelector, useDispatch } from 'react-redux';
+import { AppIcon } from '../../components/common';
+import { loadDashboardData, loadCachedDashboardData } from '../../store/slices/dashboardSlice';
 
 const { width } = Dimensions.get('window');
 
 const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onMenuPress }) => {
+  const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
-  const { getUsers, getVoters, getPollingBooths, loading } = useApiService();
-  const [dashboardData, setDashboardData] = useState({
-    totalAdmins: 0,
-    totalBoothBoys: 0,
-    totalBooths: 0,
-    totalVoters: 0,
-    allUsers: [],
-    allVoters: [],
-    recentActivities: []
-  });
+  const { stats, admins, boothBoys, loading, lastUpdated } = useSelector(state => state.dashboard);
   const [refreshing, setRefreshing] = useState(false);
-
-  const loadDashboardData = async () => {
-    console.log('Dashboard - Loading data, token:', token);
-    try {
-      const [usersData, votersData] = await Promise.all([
-        getUsers(),
-        getVoters()
-      ]);
-      
-      // Load booths with body data
-      const boothsData = await apiClient.get('/general/booths', token, {
-        state_id: 'S04',
-        district_id: 'S0429',
-        assembly_id: '195'
-      });
-      
-      console.log('Dashboard - Users data:', usersData?.length);
-      console.log('Dashboard - Voters data:', votersData?.length);
-      console.log('Dashboard - Booths data:', boothsData?.length);
-      
-      const admins = usersData?.filter(u => u.role === 'admin' || u.role === 'super_admin') || [];
-      const boothBoys = usersData?.filter(u => u.role === 'booth_boy' || u.role === 'boothboy') || [];
-      
-      setDashboardData({
-        totalAdmins: admins.length,
-        totalBoothBoys: boothBoys.length,
-        totalBooths: boothsData?.length || 0,
-        totalVoters: votersData?.length || 0,
-        allUsers: usersData || [],
-        allVoters: votersData || [],
-        recentActivities: [
-          { id: 1, action: `${admins.length} admins in system`, time: 'Now', type: 'info' },
-          { id: 2, action: `${boothBoys.length} booth boys active`, time: 'Now', type: 'success' },
-          { id: 3, action: `${boothsData?.length || 0} booths available`, time: 'Now', type: 'info' }
-        ]
-      });
-    } catch (error) {
-      console.log('Dashboard - Error loading data:', error);
-    }
-  };
+  const [recentActivities, setRecentActivities] = useState([]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
+    try {
+      const result = await dispatch(loadDashboardData()).unwrap();
+      console.log('Dashboard - Load result:', result);
+      console.log('Dashboard - Current stats:', stats);
+      console.log('Dashboard - Users data:', stats.totalAdmins + stats.totalBoothBoys);
+      console.log('Dashboard - Voters data:', stats.totalVoters);
+      console.log('Dashboard - Booths data:', stats.totalBooths);
+      console.log('Dashboard - Constituencies data:', stats.totalConstituencies);
+      
+      setRecentActivities([
+        { id: 1, action: `${stats.totalAdmins} admins in system`, time: 'Now', type: 'info' },
+        { id: 2, action: `${stats.totalBoothBoys} booth boys active`, time: 'Now', type: 'success' },
+        { id: 3, action: `${stats.totalBooths} booths available`, time: 'Now', type: 'info' }
+      ]);
+    } catch (error) {
+      console.log('Dashboard - Error loading data:', error);
+    }
     setRefreshing(false);
   };
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    // Load cached data only
+    dispatch(loadCachedDashboardData());
+  }, [dispatch]);
 
-  const StatCard = ({ iconName, iconFamily = 'MaterialIcons', title, value, color, onPress }) => {
-    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+  useEffect(() => {
+    setRecentActivities([
+      { id: 1, action: `${stats.totalAdmins} admins in system`, time: 'Now', type: 'info' },
+      { id: 2, action: `${stats.totalBoothBoys} booth boys active`, time: 'Now', type: 'success' },
+      { id: 3, action: `${stats.totalBooths} booths available`, time: 'Now', type: 'info' }
+    ]);
+  }, [stats]);
+
+  const StatCard = ({ iconName, title, value, color, onPress }) => {
     return (
       <TouchableOpacity style={styles.statCard} onPress={onPress}>
         <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
-          <IconComponent name={iconName} size={24} color={color} />
+          <AppIcon name={iconName} size={24} color={color} />
         </View>
         <View style={styles.statContent}>
           <Text style={styles.statValue}>{value}</Text>
@@ -95,12 +70,11 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
     );
   };
 
-  const QuickActionCard = ({ iconName, iconFamily = 'MaterialIcons', title, description, color, onPress }) => {
-    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+  const QuickActionCard = ({ iconName, title, description, color, onPress }) => {
     return (
       <TouchableOpacity style={[styles.actionCard, { borderColor: color + '30' }]} onPress={onPress}>
         <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
-          <IconComponent name={iconName} size={28} color={color} />
+          <AppIcon name={iconName} size={28} color={color} />
         </View>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionDescription}>{description}</Text>
@@ -120,7 +94,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
 
     return (
       <View style={styles.activityItem}>
-        <View style={[styles.activityDot, { backgroundColor: getActivityColor(activity.type) }]} />
+        <AppIcon name="circle" size={8} color={getActivityColor(activity.type)} />
         <View style={styles.activityContent}>
           <Text style={styles.activityText}>{activity.action}</Text>
           <Text style={styles.activityTime}>{activity.time}</Text>
@@ -137,7 +111,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
     >
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <Icon name="menu" size={28} color="#374151" />
+          <AppIcon name="menu" size={28} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.adminName}>Super Admin Portal</Text>
@@ -145,7 +119,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <View style={styles.logoutIconContainer}>
-            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+            <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
       </View>
@@ -155,14 +129,14 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
           <StatCard
             iconName="admin-panel-settings"
             title="Total Admins"
-            value={dashboardData.totalAdmins}
+            value={stats.totalAdmins}
             color="#8B5CF6"
             onPress={() => onNavigate('allAdmins')}
           />
           <StatCard
             iconName="group"
             title="Total Booth Boys"
-            value={dashboardData.totalBoothBoys}
+            value={stats.totalBoothBoys}
             color="#3B82F6"
             onPress={() => onNavigate('allBoothBoys')}
           />
@@ -171,30 +145,30 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
           <StatCard
             iconName="location-on"
             title="Total Booths"
-            value={dashboardData.totalBooths}
+            value={stats.totalBooths}
             color="#10B981"
-            onPress={() => onNavigate('boothSelection')}
+            onPress={() => onNavigate('boothList')}
           />
           <StatCard
             iconName="public"
             title="Constituencies"
-            value={dashboardData.totalConstituencies}
+            value={stats.totalConstituencies}
             color="#F59E0B"
-            onPress={() => {}}
+            onPress={() => onNavigate('constituenciesList')}
           />
         </View>
         <View style={styles.statsRow}>
           <StatCard
             iconName="bar-chart"
             title="Data Progress"
-            value={`${dashboardData.dataProgress}%`}
+            value="0%"
             color="#EF4444"
             onPress={() => {}}
           />
           <StatCard
             iconName="online-prediction"
             title="Active Today"
-            value={dashboardData.activeToday}
+            value={0}
             color="#06B6D4"
             onPress={() => {}}
           />
@@ -238,7 +212,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>System Activities</Text>
         <View style={styles.activitiesContainer}>
-          {dashboardData.recentActivities.map((activity) => (
+          {recentActivities.map((activity) => (
             <ActivityItem key={activity.id} activity={activity} />
           ))}
         </View>
@@ -250,21 +224,21 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
           <View style={styles.healthMetric}>
             <Text style={styles.healthLabel}>Database Status</Text>
             <View style={styles.healthStatus}>
-              <View style={[styles.healthDot, { backgroundColor: '#10B981' }]} />
+              <AppIcon name="circle" size={8} color="#10B981" />
               <Text style={[styles.healthText, { color: '#10B981' }]}>Online</Text>
             </View>
           </View>
           <View style={styles.healthMetric}>
             <Text style={styles.healthLabel}>API Status</Text>
             <View style={styles.healthStatus}>
-              <View style={[styles.healthDot, { backgroundColor: '#10B981' }]} />
+              <AppIcon name="circle" size={8} color="#10B981" />
               <Text style={[styles.healthText, { color: '#10B981' }]}>Healthy</Text>
             </View>
           </View>
           <View style={styles.healthMetric}>
             <Text style={styles.healthLabel}>Scraper Status</Text>
             <View style={styles.healthStatus}>
-              <View style={[styles.healthDot, { backgroundColor: '#F59E0B' }]} />
+              <AppIcon name="circle" size={8} color="#F59E0B" />
               <Text style={[styles.healthText, { color: '#F59E0B' }]}>Running</Text>
             </View>
           </View>
@@ -447,13 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    marginRight: 12,
-  },
+
   activityContent: {
     flex: 1,
   },
@@ -490,12 +458,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  healthDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
+
   healthText: {
     fontSize: 12,
     fontWeight: '500',

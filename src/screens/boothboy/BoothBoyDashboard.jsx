@@ -9,7 +9,7 @@ import {
 import VoterListScreen from './VoterListScreen';
 import FilterModal from './components/FilterModal';
 import BoothBoyProfile from './components/BoothBoyProfile';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AppIcon } from '../../components/common';
 
 const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
   const [showVoterList, setShowVoterList] = useState(false);
@@ -72,7 +72,7 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-            <Icon name="menu" size={28} color="#374151" />
+            <AppIcon name="menu" size={28} color="#374151" />
           </TouchableOpacity>
           <View style={styles.profilePic}>
             <Text style={styles.profileText}>{defaultBoothBoyInfo.name.charAt(0)}</Text>
@@ -84,7 +84,7 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <View style={styles.logoutIconContainer}>
-            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+            <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
       </View>
@@ -114,7 +114,7 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
                 onPress={() => handleFilterSelect(option.id)}
               >
                 <View style={[styles.filterIcon, { backgroundColor: option.color + '20' }]}>
-                  <Icon name={option.iconName} size={20} color={option.color} />
+                  <AppIcon name={option.iconName} size={20} color={option.color} />
                 </View>
                 <Text style={styles.filterTitle}>{option.title}</Text>
               </TouchableOpacity>

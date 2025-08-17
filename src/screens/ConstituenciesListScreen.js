@@ -5,81 +5,53 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   TextInput,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import { useApiService } from '../hooks/useApiService';
-import BoothCard from '../components/BoothCard';
+import ConstituencyCard from '../components/ConstituencyCard';
 import { AppIcon, BackButton } from '../components/common';
 
-const BoothListScreen = ({ onBack }) => {
-  const { user } = useSelector(state => state.auth);
-  const { getVoters, loading } = useApiService();
-  const [booths, setBooths] = useState([]);
-  const [filteredBooths, setFilteredBooths] = useState([]);
+const ConstituenciesListScreen = ({ onBack }) => {
+  const { constituencies, loading } = useSelector(state => state.dashboard);
+  const [filteredConstituencies, setFilteredConstituencies] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadBooths = async () => {
-    try {
-      console.log('Using framework for GET with body');
-      
-      const bodyData = {
-        state_id: 'S04',
-        district_id: 'S0429',
-        assembly_id: '195'
-      };
-      
-      const boothsData = await apiClient.get('/general/booths', token, bodyData);
-      console.log('Booths data:', boothsData);
-      
-      setBooths(boothsData || []);
-      setFilteredBooths(boothsData || []);
-    } catch (error) {
-      console.log('Error:', error);
-      Alert.alert('Error', error.message);
-    }
-  };
-
   useEffect(() => {
-    loadBooths();
-  }, []);
+    setFilteredConstituencies(constituencies || []);
+  }, [constituencies]);
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = booths.filter(booth => 
-        booth.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        booth.partId.toString().includes(searchQuery) ||
-        booth.partNumber.toString().includes(searchQuery)
+      const filtered = constituencies.filter(constituency => 
+        constituency.asmblyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        constituency.asmblyNameL1.includes(searchQuery) ||
+        constituency.asmblyNo.toString().includes(searchQuery) ||
+        constituency.districtCd.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredBooths(filtered);
+      setFilteredConstituencies(filtered);
     } else {
-      setFilteredBooths(booths);
+      setFilteredConstituencies(constituencies || []);
     }
-  }, [searchQuery, booths]);
+  }, [searchQuery, constituencies]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadBooths();
-    setRefreshing(false);
+    // Refresh logic would go here
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-  };
-
-  const renderBoothItem = ({ item }) => (
-    <BoothCard booth={item} />
+  const renderConstituencyItem = ({ item }) => (
+    <ConstituencyCard constituency={item} />
   );
 
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading booths...</Text>
+        <Text style={styles.loadingText}>Loading constituencies...</Text>
       </View>
     );
   }
@@ -89,25 +61,25 @@ const BoothListScreen = ({ onBack }) => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <BackButton onPress={onBack} />
-          <Text style={styles.title}>Polling Booths</Text>
+          <Text style={styles.title}>Constituencies</Text>
         </View>
-        <Text style={styles.subtitle}>Total: {filteredBooths.length} booths</Text>
+        <Text style={styles.subtitle}>Total: {filteredConstituencies.length} constituencies</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by booth name, part number, or ID..."
+          placeholder="Search by name, number, or district..."
           value={searchQuery}
-          onChangeText={handleSearch}
+          onChangeText={setSearchQuery}
           placeholderTextColor="#666"
         />
       </View>
 
       <FlatList
-        data={filteredBooths}
-        renderItem={renderBoothItem}
-        keyExtractor={(item) => item.partId.toString()}
+        data={filteredConstituencies}
+        renderItem={renderConstituencyItem}
+        keyExtractor={(item) => item.acId.toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -184,4 +156,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BoothListScreen;
+export default ConstituenciesListScreen;

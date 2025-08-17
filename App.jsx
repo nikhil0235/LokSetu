@@ -17,8 +17,9 @@ import BoothAssignmentScreen from './src/screens/admin/BoothAssignmentScreen';
 import CreatedBoothBoysScreen from './src/screens/admin/CreatedBoothBoysScreen';
 import AllAdminsScreen from './src/screens/admin/AllAdminsScreen';
 import AllBoothBoysScreen from './src/screens/admin/AllBoothBoysScreen';
-import BoothListScreen from './src/screens/BoothListScreen';
+import BoothListScreen from './src/screens/admin/BoothListScreen';
 import BoothSelectionScreen from './src/screens/admin/BoothSelectionScreen';
+import ConstituenciesListScreen from './src/screens/ConstituenciesListScreen';
 import { BoothBoyDashboard } from './src/screens/boothboy';
 import SideDrawer from './src/components/common/SideDrawer';
 import SplashScreen from './src/components/common/SplashScreen';
@@ -121,6 +122,8 @@ const AppContent = () => {
           return <BoothListScreen {...screenProps} />;
         case 'boothSelection':
           return <BoothSelectionScreen {...screenProps} />;
+        case 'constituenciesList':
+          return <ConstituenciesListScreen {...screenProps} />;
         default:
           return null;
       }

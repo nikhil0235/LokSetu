@@ -9,8 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSelector } from 'react-redux';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import FeatherIcon from 'react-native-vector-icons/Feather';
+import { AppIcon } from '../../components/common';
 
 const { width } = Dimensions.get('window');
 
@@ -50,12 +49,11 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     }));
   }, [user?.created_users]);
 
-  const StatCard = ({ iconName, iconFamily = 'MaterialIcons', title, value, color, onPress }) => {
-    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+  const StatCard = ({ iconName, title, value, color, onPress }) => {
     return (
       <TouchableOpacity style={styles.statCard} onPress={onPress}>
         <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
-          <IconComponent name={iconName} size={24} color={color} />
+          <AppIcon name={iconName} size={24} color={color} />
         </View>
         <View style={styles.statContent}>
           <Text style={styles.statValue}>{value}</Text>
@@ -65,12 +63,11 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     );
   };
 
-  const QuickActionCard = ({ iconName, iconFamily = 'MaterialIcons', title, description, color, onPress }) => {
-    const IconComponent = iconFamily === 'Feather' ? FeatherIcon : Icon;
+  const QuickActionCard = ({ iconName, title, description, color, onPress }) => {
     return (
       <TouchableOpacity style={[styles.actionCard, { borderColor: color + '30' }]} onPress={onPress}>
         <View style={[styles.actionIcon, { backgroundColor: color + '20' }]}>
-          <IconComponent name={iconName} size={28} color={color} />
+          <AppIcon name={iconName} size={28} color={color} />
         </View>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionDescription}>{description}</Text>
@@ -107,7 +104,7 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     >
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <Icon name="menu" size={28} color="#374151" />
+          <AppIcon name="menu" size={28} color="#374151" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.adminName}>{user?.full_name || user?.username || 'Admin'}</Text>
@@ -115,7 +112,7 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <View style={styles.logoutIconContainer}>
-            <Icon name="power-settings-new" size={20} color="#FFFFFF" />
+            <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
       </View>

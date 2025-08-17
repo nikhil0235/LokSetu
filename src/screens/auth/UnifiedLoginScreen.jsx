@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView 
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { AppIcon } from '../../components/common';
 import BackButton from '../../components/common/BackButton';
 import EnhancedInputField from '../../components/common/EnhancedInputField';
 import GradientButton from '../../components/common/GradientButton';
@@ -196,8 +196,8 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             <Text style={[styles.strengthText, { color: formState.passwordStrength.color }]}>
               {formState.passwordStrength.label}
             </Text>
-            <Icon 
-              name={formState.passwordStrength.strength >= 3 ? "checkmark-circle" : "alert-circle"} 
+            <AppIcon 
+              name={formState.passwordStrength.strength >= 3 ? "check-circle" : "error"} 
               size={16} 
               color={formState.passwordStrength.color} 
             />
@@ -212,7 +212,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             formState.rememberMe && styles.checkboxChecked,
             { transform: [{ scale: formState.rememberMe ? 1.1 : 1 }] }
           ]}>
-            {formState.rememberMe && <Icon name="checkmark" size={14} color="#FFFFFF" />}
+            {formState.rememberMe && <AppIcon name="check" size={14} color="#FFFFFF" />}
           </Animated.View>
           <Text style={styles.rememberText}>Remember me</Text>
         </TouchableOpacity>
@@ -241,7 +241,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
             style={styles.biometricButton}
           >
-            <Icon name="finger-print" size={24} color={roleConfig.colors[0]} />
+            <AppIcon name="fingerprint" size={24} color={roleConfig.colors[0]} />
             <Text style={[styles.biometricText, { color: roleConfig.colors[0] }]}>
               Use Biometric Login
             </Text>
@@ -281,7 +281,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
       ) : (
         <>
           <View style={styles.phoneDisplay}>
-            <Icon name="checkmark-circle" size={32} color={COLORS.SUCCESS} />
+            <AppIcon name="check-circle" size={32} color={COLORS.SUCCESS} />
             <Text style={styles.phoneLabel}>OTP sent to: +91 {formData.phoneNumber}</Text>
             <TouchableOpacity onPress={resetOtpFlow} style={styles.changeNumberButton}>
               <Text style={styles.changeNumber}>Change Number</Text>
@@ -304,12 +304,12 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           <View style={styles.resendContainer}>
             {formState.countdown > 0 ? (
               <View style={styles.countdownContainer}>
-                <Icon name="time-outline" size={16} color="#8E8E93" />
+                <AppIcon name="schedule" size={16} color="#8E8E93" />
                 <Text style={styles.countdownText}>Resend OTP in {formState.countdown}s</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={handleResendOtp} style={styles.resendButton}>
-                <Icon name="refresh-outline" size={16} color={COLORS.INFO} />
+                <AppIcon name="refresh" size={16} color={COLORS.INFO} />
                 <Text style={styles.resendText}>Resend OTP</Text>
               </TouchableOpacity>
             )}
@@ -324,7 +324,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           />
 
           <View style={styles.helpBox}>
-            <Icon name="bulb-outline" size={20} color="#10B981" />
+            <AppIcon name="lightbulb" size={20} color="#10B981" />
             <Text style={styles.helpText}>For demo: Use OTP 123456</Text>
           </View>
         </>
@@ -351,7 +351,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             colors={roleConfig.colors}
             style={styles.roleInfoIcon}
           >
-            <Icon name={roleConfig.icon} size={32} color="#FFFFFF" />
+            <AppIcon name="admin-panel-settings" size={32} color="#FFFFFF" />
           </LinearGradient>
           <Text style={styles.roleInfoTitle}>{roleConfig.title}</Text>
           <Text style={styles.roleInfoDescription}>{roleConfig.description}</Text>
@@ -361,7 +361,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           <Text style={styles.sectionTitle}>Key Permissions</Text>
           {roleConfig.permissions.map((permission, index) => (
             <View key={index} style={styles.permissionItem}>
-              <Icon name="checkmark-circle" size={16} color={roleConfig.colors[0]} />
+              <AppIcon name="check-circle" size={16} color={roleConfig.colors[0]} />
               <Text style={styles.permissionText}>{permission}</Text>
             </View>
           ))}
@@ -371,7 +371,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           <Text style={styles.sectionTitle}>Available Features</Text>
           {roleConfig.features.map((feature, index) => (
             <View key={index} style={styles.featureItem}>
-              <Icon name="arrow-forward-circle" size={16} color={roleConfig.colors[1]} />
+              <AppIcon name="arrow-forward" size={16} color={roleConfig.colors[1]} />
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
@@ -389,7 +389,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
         <View style={styles.headerRow}>
           <BackButton onPress={() => onNavigate('main')} />
           <TouchableOpacity onPress={toggleRoleInfo} style={styles.infoButton}>
-            <Icon name="information-circle-outline" size={24} color="#FFFFFF" />
+            <AppIcon name="info" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -409,14 +409,14 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             colors={roleConfig.colors}
             style={styles.roleIconContainer}
           >
-            <Icon name={roleConfig.icon} size={28} color="#FFFFFF" />
+            <AppIcon name="admin-panel-settings" size={28} color="#FFFFFF" />
           </LinearGradient>
           <View style={styles.roleTextContainer}>
             <Text style={styles.roleTitle}>{roleConfig.title}</Text>
             <Text style={styles.roleSubtitle}>{roleConfig.subtitle}</Text>
           </View>
           <View style={styles.statusBadge}>
-            <Icon name="shield-checkmark" size={14} color={roleConfig.colors[0]} />
+            <AppIcon name="security" size={14} color={roleConfig.colors[0]} />
             <Text style={[styles.statusText, { color: roleConfig.colors[0] }]}>Secure</Text>
           </View>
         </Animated.View>
@@ -444,8 +444,8 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
               style={[styles.tab, loginMethod === 'password' && styles.activeTab]}
               onPress={() => setLoginMethod('password')}
             >
-              <Icon 
-                name="lock-closed" 
+              <AppIcon 
+                name="lock" 
                 size={18} 
                 color={loginMethod === 'password' ? roleConfig.colors[0] : '#9CA3AF'} 
               />
@@ -461,8 +461,8 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
               style={[styles.tab, loginMethod === 'otp' && styles.activeTab]}
               onPress={() => setLoginMethod('otp')}
             >
-              <Icon 
-                name="phone-portrait" 
+              <AppIcon 
+                name="phone" 
                 size={18} 
                 color={loginMethod === 'otp' ? roleConfig.colors[0] : '#9CA3AF'} 
               />

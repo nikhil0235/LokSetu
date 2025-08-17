@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AppIcon } from './index';
 
 const PasswordInputField = ({ 
   label, 
@@ -31,7 +31,7 @@ const PasswordInputField = ({
           style={styles.eyeButton}
           onPress={() => setShowPassword(!showPassword)}
         >
-          <Icon 
+          <AppIcon 
             name={showPassword ? 'visibility-off' : 'visibility'} 
             size={20} 
             color="#6B7280" 

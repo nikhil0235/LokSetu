@@ -31,14 +31,14 @@ const CreateAdminScreen = ({ onBack, onLogout }) => {
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
+    full_name: 'Test Admin',
+    email: 'testadmin@example.com',
+    phone: '9876543211',
+    username: 'testadmin123',
+    password: 'TestPass123',
+    confirmPassword: 'TestPass123',
     role: 'admin',
-    assigned_constituencies: [],
+    assigned_constituencies: ['Constituency-1', 'Constituency-2'],
     assigned_booths: '',
   });
   
@@ -125,7 +125,9 @@ const CreateAdminScreen = ({ onBack, onLogout }) => {
         ...userData,
         assigned_booths: assigned_constituencies.join(',')
       };
-      await apiClient.post(ENDPOINTS.USERS.CREATE, userPayload, token);
+      console.log('Creating admin with data:', userPayload);
+      const result = await apiClient.post(ENDPOINTS.USERS.CREATE, userPayload, token);
+      console.log('Admin creation result:', result);
       
       Alert.alert(
         'Success!',

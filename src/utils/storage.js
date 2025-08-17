@@ -5,7 +5,8 @@ const STORAGE_KEYS = {
   USER_DATA: '@user_data',
   SAVED_CREDENTIALS: '@saved_credentials',
   LOGIN_ATTEMPTS: '@login_attempts',
-  LAST_LOGIN: '@last_login'
+  LAST_LOGIN: '@last_login',
+  DASHBOARD_DATA: '@dashboard_data'
 };
 
 // Simple encryption for demo - use proper encryption in production
@@ -87,6 +88,19 @@ export const storage = {
 
   async clearAuth() {
     await AsyncStorage.multiRemove([STORAGE_KEYS.AUTH_TOKEN, STORAGE_KEYS.USER_DATA]);
+  },
+
+  async setDashboardData(data) {
+    await AsyncStorage.setItem(STORAGE_KEYS.DASHBOARD_DATA, JSON.stringify(data));
+  },
+
+  async getDashboardData() {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.DASHBOARD_DATA);
+    return data ? JSON.parse(data) : null;
+  },
+
+  async clearDashboardData() {
+    await AsyncStorage.removeItem(STORAGE_KEYS.DASHBOARD_DATA);
   },
 
   async clearAll() {

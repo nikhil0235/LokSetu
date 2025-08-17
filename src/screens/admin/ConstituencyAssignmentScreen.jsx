@@ -9,112 +9,61 @@ import {
   Modal,
   Alert,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
-const icons = {
-  Search: '🔍',
-  MapPin: '📍',
-  User: '👤',
-  Plus: '➕',
-  X: '✖️',
-  Check: '✓',
-  Users: '👥',
-  BarChart3: '📊',
-};
+import { useSelector, useDispatch } from 'react-redux';
+import { loadDashboardData } from '../../store/slices/dashboardSlice';
+import { AppIcon } from '../../components/common';
 
 const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
-  const [constituencies, setConstituencies] = useState([]);
-  const [admins, setAdmins] = useState([]);
+  const dispatch = useDispatch();
+  const dashboardState = useSelector(state => state.dashboard);
+  const { constituencies, admins, loading } = dashboardState;
   const [searchQuery, setSearchQuery] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedConstituency, setSelectedConstituency] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [assignedConstituencies, setAssignedConstituencies] = useState({});
 
-  // Mock data
-  const mockConstituencies = [
-    {
-      id: 1,
-      name: 'Constituency-1',
-      area: 'North Zone',
-      totalBooths: 45,
-      assignedAdmin: {
-        id: 1,
-        name: 'Rajesh Kumar',
-        email: 'rajesh@email.com'
-      },
-      boothBoys: 12,
-      dataProgress: 85,
-      status: 'active'
-    },
-    {
-      id: 2,
-      name: 'Constituency-2',
-      area: 'South Zone',
-      totalBooths: 38,
-      assignedAdmin: {
-        id: 2,
-        name: 'Priya Singh',
-        email: 'priya@email.com'
-      },
-      boothBoys: 8,
-      dataProgress: 72,
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: 'Constituency-3',
-      area: 'East Zone',
-      totalBooths: 52,
-      assignedAdmin: null,
-      boothBoys: 0,
-      dataProgress: 0,
-      status: 'unassigned'
-    },
-    {
-      id: 4,
-      name: 'Constituency-4',
-      area: 'West Zone',
-      totalBooths: 41,
-      assignedAdmin: {
-        id: 3,
-        name: 'Amit Sharma',
-        email: 'amit@email.com'
-      },
-      boothBoys: 15,
-      dataProgress: 91,
-      status: 'active'
-    },
-    {
-      id: 5,
-      name: 'Constituency-5',
-      area: 'Central Zone',
-      totalBooths: 33,
-      assignedAdmin: null,
-      boothBoys: 0,
-      dataProgress: 0,
-      status: 'unassigned'
-    },
-  ];
+  // Debug the entire dashboard state
+  console.log('Full dashboard state:', dashboardState);
 
-  const mockAdmins = [
-    { id: 1, name: 'Rajesh Kumar', email: 'rajesh@email.com', assignedConstituency: 'Constituency-1' },
-    { id: 2, name: 'Priya Singh', email: 'priya@email.com', assignedConstituency: 'Constituency-2' },
-    { id: 3, name: 'Amit Sharma', email: 'amit@email.com', assignedConstituency: 'Constituency-4' },
-    { id: 4, name: 'Neha Patel', email: 'neha@email.com', assignedConstituency: null },
-    { id: 5, name: 'Suresh Gupta', email: 'suresh@email.com', assignedConstituency: null },
-    { id: 6, name: 'Kavita Joshi', email: 'kavita@email.com', assignedConstituency: null },
-  ];
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(loadDashboardData()).unwrap();
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+    setRefreshing(false);
+  };
 
-  useEffect(() => {
-    setConstituencies(mockConstituencies);
-    setAdmins(mockAdmins);
-  }, []);
+  // Debug logging
+  console.log('Constituencies data:', constituencies);
+  console.log('Constituencies length:', constituencies?.length);
+  console.log('Admins data:', admins);
+  console.log('Admins length:', admins?.length);
+  console.log('Loading state:', loading);
 
-  const filteredConstituencies = constituencies.filter(constituency =>
-    constituency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    constituency.area.toLowerCase().includes(searchQuery.toLowerCase())
+  // Transform constituencies data to match expected format
+  const transformedConstituencies = (constituencies || []).map((constituency, index) => ({
+    id: constituency.acId || (index + 1),
+    name: constituency.asmblyName || 'Unknown Constituency',
+    area: constituency.districtCd || 'Unknown Area',
+    totalBooths: constituency.total_booths || 0,
+    assignedAdmin: assignedConstituencies[constituency.acId] || null,
+    boothBoys: 0,
+    dataProgress: 0,
+    status: assignedConstituencies[constituency.acId] ? 'active' : 'unassigned'
+  }));
+
+  const filteredConstituencies = transformedConstituencies.filter(constituency =>
+    (constituency.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (constituency.area || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const availableAdmins = admins.filter(admin => !admin.assignedConstituency);
+  const availableAdmins = admins || [];
 
   const handleAssignAdmin = () => {
     if (!selectedConstituency || !selectedAdmin) {
@@ -122,36 +71,24 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       return;
     }
 
-    const updatedConstituencies = constituencies.map(constituency => {
-      if (constituency.id === selectedConstituency.id) {
-        return {
-          ...constituency,
-          assignedAdmin: selectedAdmin,
-          status: 'active'
-        };
-      }
-      return constituency;
-    });
+    const adminData = {
+      id: selectedAdmin.UserID,
+      name: selectedAdmin.FullName || selectedAdmin.Username,
+      email: selectedAdmin.Email || selectedAdmin.Username
+    };
 
-    const updatedAdmins = admins.map(admin => {
-      if (admin.id === selectedAdmin.id) {
-        return {
-          ...admin,
-          assignedConstituency: selectedConstituency.name
-        };
-      }
-      return admin;
-    });
+    setAssignedConstituencies(prev => ({
+      ...prev,
+      [selectedConstituency.id]: adminData
+    }));
 
-    setConstituencies(updatedConstituencies);
-    setAdmins(updatedAdmins);
     setShowAssignModal(false);
     setSelectedConstituency(null);
     setSelectedAdmin(null);
 
     Alert.alert(
       'Success',
-      `${selectedAdmin.name} has been assigned to ${selectedConstituency.name}`
+      `${adminData.name} has been assigned to ${selectedConstituency.name}`
     );
   };
 
@@ -165,29 +102,11 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
           text: 'Unassign',
           style: 'destructive',
           onPress: () => {
-            const updatedConstituencies = constituencies.map(c => {
-              if (c.id === constituency.id) {
-                return {
-                  ...c,
-                  assignedAdmin: null,
-                  status: 'unassigned'
-                };
-              }
-              return c;
+            setAssignedConstituencies(prev => {
+              const updated = { ...prev };
+              delete updated[constituency.id];
+              return updated;
             });
-
-            const updatedAdmins = admins.map(admin => {
-              if (admin.id === constituency.assignedAdmin.id) {
-                return {
-                  ...admin,
-                  assignedConstituency: null
-                };
-              }
-              return admin;
-            });
-
-            setConstituencies(updatedConstituencies);
-            setAdmins(updatedAdmins);
           }
         }
       ]
@@ -218,15 +137,15 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
 
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <Text style={[styles.iconText, { fontSize: 14 }]}>{icons.MapPin}</Text>
+          <AppIcon name="location-on" size={16} color="#6B7280" />
           <Text style={styles.statText}>{constituency.totalBooths} Booths</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.iconText, { fontSize: 14 }]}>{icons.Users}</Text>
+          <AppIcon name="group" size={16} color="#6B7280" />
           <Text style={styles.statText}>{constituency.boothBoys} Booth Boys</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.iconText, { fontSize: 14 }]}>{icons.BarChart3}</Text>
+          <AppIcon name="bar-chart" size={16} color="#6B7280" />
           <Text style={styles.statText}>{constituency.dataProgress}% Complete</Text>
         </View>
       </View>
@@ -234,7 +153,7 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       {constituency.assignedAdmin ? (
         <View style={styles.adminSection}>
           <View style={styles.adminInfo}>
-            <Text style={[styles.iconText, { fontSize: 14, color: '#3B82F6' }]}>{icons.User}</Text>
+            <AppIcon name="person" size={16} color="#3B82F6" />
             <View style={styles.adminDetails}>
               <Text style={styles.adminName}>{constituency.assignedAdmin.name}</Text>
               <Text style={styles.adminEmail}>{constituency.assignedAdmin.email}</Text>
@@ -244,7 +163,7 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
             style={styles.unassignButton}
             onPress={() => handleUnassignAdmin(constituency)}
           >
-            <Text style={[styles.iconText, { fontSize: 14, color: '#EF4444' }]}>{icons.X}</Text>
+            <AppIcon name="close" size={16} color="#EF4444" />
           </TouchableOpacity>
         </View>
       ) : (
@@ -255,7 +174,7 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
             setShowAssignModal(true);
           }}
         >
-          <Text style={[styles.iconText, { fontSize: 14, color: '#FFFFFF' }]}>{icons.Plus}</Text>
+          <AppIcon name="add" size={16} color="#FFFFFF" />
           <Text style={styles.assignButtonText}>Assign Admin</Text>
         </TouchableOpacity>
       )}
@@ -267,18 +186,18 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.iconText}>{icons.X}</Text>
+          <AppIcon name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Constituency Assignment</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪 Logout</Text>
+          <AppIcon name="logout" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Text style={styles.iconText}>{icons.Search}</Text>
+          <AppIcon name="search" size={20} color="#6B7280" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search constituencies..."
@@ -292,18 +211,18 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       {/* Summary Stats */}
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{constituencies.length}</Text>
+          <Text style={styles.summaryValue}>{transformedConstituencies.length}</Text>
           <Text style={styles.summaryLabel}>Total</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#10B981' }]}>
-            {constituencies.filter(c => c.status === 'active').length}
+            {transformedConstituencies.filter(c => c.status === 'active').length}
           </Text>
           <Text style={styles.summaryLabel}>Assigned</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#EF4444' }]}>
-            {constituencies.filter(c => c.status === 'unassigned').length}
+            {transformedConstituencies.filter(c => c.status === 'unassigned').length}
           </Text>
           <Text style={styles.summaryLabel}>Unassigned</Text>
         </View>
@@ -315,14 +234,39 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
         </View>
       </View>
 
+      {/* Debug Info */}
+      <View style={styles.debugContainer}>
+        <Text style={styles.debugText}>Constituencies: {constituencies?.length || 0}</Text>
+        <Text style={styles.debugText}>Admins: {admins?.length || 0}</Text>
+        <Text style={styles.debugText}>Loading: {loading ? 'Yes' : 'No'}</Text>
+      </View>
+
       {/* Constituencies List */}
-      <FlatList
-        data={filteredConstituencies}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <ConstituencyCard constituency={item} />}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading constituencies...</Text>
+        </View>
+      ) : filteredConstituencies.length > 0 ? (
+        <FlatList
+          data={filteredConstituencies}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => <ConstituencyCard constituency={item} />}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          <AppIcon name="location-off" size={48} color="#9CA3AF" />
+          <Text style={styles.emptyTitle}>No Constituencies Found</Text>
+          <Text style={styles.emptySubtitle}>Constituencies: {constituencies?.length || 0}, Admins: {admins?.length || 0}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Assignment Modal */}
       <Modal
@@ -339,7 +283,7 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
                 onPress={() => setShowAssignModal(false)}
                 style={styles.modalCloseButton}
               >
-                <Text style={styles.iconText}>{icons.X}</Text>
+                <AppIcon name="close" size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
@@ -355,19 +299,19 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
             <ScrollView style={styles.adminsList}>
               {availableAdmins.map((admin) => (
                 <TouchableOpacity
-                  key={admin.id}
+                  key={admin.UserID}
                   style={[
                     styles.adminOption,
-                    selectedAdmin?.id === admin.id && styles.selectedAdminOption
+                    selectedAdmin?.UserID === admin.UserID && styles.selectedAdminOption
                   ]}
                   onPress={() => setSelectedAdmin(admin)}
                 >
                   <View style={styles.adminOptionInfo}>
-                    <Text style={styles.adminOptionName}>{admin.name}</Text>
-                    <Text style={styles.adminOptionEmail}>{admin.email}</Text>
+                    <Text style={styles.adminOptionName}>{admin.FullName || admin.Username}</Text>
+                    <Text style={styles.adminOptionEmail}>{admin.Email || admin.Username}</Text>
                   </View>
-                  {selectedAdmin?.id === admin.id && (
-                    <Text style={[styles.iconText, { color: '#3B82F6' }]}>{icons.Check}</Text>
+                  {selectedAdmin?.UserID === admin.UserID && (
+                    <AppIcon name="check" size={16} color="#3B82F6" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -425,14 +369,6 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: '#EF4444',
     borderRadius: 8,
-  },
-  logoutText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  iconText: {
-    fontSize: 18,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -529,7 +465,7 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 12,
     color: '#6B7280',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   adminSection: {
     flexDirection: 'row',
@@ -684,6 +620,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  debugContainer: {
+    backgroundColor: '#FEF3C7',
+    padding: 10,
+    margin: 10,
+    borderRadius: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#92400E',
   },
 });
 

@@ -7,20 +7,17 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { useApiService } from '../../hooks/useApiService';
+import { useSelector, useDispatch } from 'react-redux';
+import { loadDashboardData } from '../../store/slices/dashboardSlice';
 
 const AllBoothBoysScreen = ({ onBack, onLogout }) => {
-  const { user } = useSelector(state => state.auth);
-  const { getUsers, loading } = useApiService();
+  const dispatch = useDispatch();
+  const { boothBoys, loading } = useSelector(state => state.dashboard);
   const [refreshing, setRefreshing] = useState(false);
-  const [allBoothBoys, setAllBoothBoys] = useState([]);
 
   const loadBoothBoys = async () => {
     try {
-      const users = await getUsers();
-      const boothBoys = users?.filter(u => u.role === 'booth_boy' || u.role === 'boothboy') || [];
-      setAllBoothBoys(boothBoys);
+      await dispatch(loadDashboardData()).unwrap();
     } catch (error) {
       console.error('Error loading booth boys:', error);
     }
@@ -40,8 +37,8 @@ const AllBoothBoysScreen = ({ onBack, onLogout }) => {
     <View style={styles.boothBoyCard}>
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{boothBoy.full_name || boothBoy.username}</Text>
-          <Text style={styles.userRole}>{boothBoy.role}</Text>
+          <Text style={styles.userName}>{boothBoy.FullName || boothBoy.Username}</Text>
+          <Text style={styles.userRole}>{boothBoy.Role}</Text>
         </View>
         <View style={styles.statusContainer}>
           <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
@@ -52,34 +49,34 @@ const AllBoothBoysScreen = ({ onBack, onLogout }) => {
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Username:</Text>
-          <Text style={styles.infoValue}>{boothBoy.username}</Text>
+          <Text style={styles.infoValue}>{boothBoy.Username}</Text>
         </View>
         
-        {boothBoy.phone && (
+        {boothBoy.Phone && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Phone:</Text>
-            <Text style={styles.infoValue}>{boothBoy.phone}</Text>
+            <Text style={styles.infoValue}>{boothBoy.Phone}</Text>
           </View>
         )}
         
-        {boothBoy.email && (
+        {boothBoy.Email && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{boothBoy.email}</Text>
+            <Text style={styles.infoValue}>{boothBoy.Email}</Text>
           </View>
         )}
         
-        {boothBoy.assigned_scope && (
+        {boothBoy.AssignedBoothIDs && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Assigned Booths:</Text>
-            <Text style={styles.infoValue}>{boothBoy.assigned_scope}</Text>
+            <Text style={styles.infoValue}>{boothBoy.AssignedBoothIDs}</Text>
           </View>
         )}
 
-        {boothBoy.created_by && (
+        {boothBoy.Created_by && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Created By:</Text>
-            <Text style={styles.infoValue}>{boothBoy.created_by}</Text>
+            <Text style={styles.infoValue}>{boothBoy.Created_by}</Text>
           </View>
         )}
       </View>
@@ -100,7 +97,7 @@ const AllBoothBoysScreen = ({ onBack, onLogout }) => {
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Total Booth Boys</Text>
-        <Text style={styles.summaryCount}>{allBoothBoys.length}</Text>
+        <Text style={styles.summaryCount}>{boothBoys.length}</Text>
         <Text style={styles.summarySubtitle}>Across all admins</Text>
       </View>
 
@@ -109,9 +106,9 @@ const AllBoothBoysScreen = ({ onBack, onLogout }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {allBoothBoys.length > 0 ? (
-          allBoothBoys.map((boothBoy, index) => (
-            <BoothBoyCard key={boothBoy.user_id || index} boothBoy={boothBoy} />
+        {boothBoys.length > 0 ? (
+          boothBoys.map((boothBoy, index) => (
+            <BoothBoyCard key={boothBoy.UserID || index} boothBoy={boothBoy} />
           ))
         ) : (
           <View style={styles.emptyState}>

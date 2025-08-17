@@ -9,7 +9,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AppIcon } from './index';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.75;
@@ -117,14 +117,14 @@ const SideDrawer = ({ visible, onClose, user, onNavigate, onLogout }) => {
               style={styles.menuItem}
               onPress={() => handleItemPress(item.id)}
             >
-              <Icon name={item.iconName} size={20} color="#6B7280" style={styles.menuIcon} />
+              <AppIcon name={item.iconName} size={20} color="#6B7280" style={styles.menuIcon} />
               <Text style={styles.menuTitle}>{item.title}</Text>
             </TouchableOpacity>
           ))}
           
           <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
             <View style={styles.logoutIconWrapper}>
-              <Icon name="power-settings-new" size={18} color="#FFFFFF" />
+              <AppIcon name="power-settings-new" size={18} color="#FFFFFF" />
             </View>
             <Text style={[styles.menuTitle, { color: '#EF4444', fontWeight: '600' }]}>Logout</Text>
           </TouchableOpacity>

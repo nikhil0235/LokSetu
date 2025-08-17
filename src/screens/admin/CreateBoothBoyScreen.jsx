@@ -15,21 +15,21 @@ import { ENDPOINTS } from '../../services/api/config';
 import InputField from '../../components/common/InputField';
 import PasswordInputField from '../../components/common/PasswordInputField';
 import BoothSelectionScreen from './BoothSelectionScreen';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AppIcon, BackButton } from '../../components/common';
 
 const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
   const { user, token } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
+    full_name: 'Test Booth Boy',
+    email: 'testboothboy@example.com',
+    phone: '9876543210',
+    username: 'testboothboy123',
+    password: 'TestPass123',
+    confirmPassword: 'TestPass123',
     role: 'booth_boy',
-    assigned_booths: [],
+    assigned_booths: ['195001', '195002'],
   });
   
   const [showBoothSelection, setShowBoothSelection] = useState(false);
@@ -121,7 +121,9 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
     setLoading(true);
     try {
       const { confirmPassword, ...userData } = formData;
-      await apiClient.post(ENDPOINTS.USERS.CREATE, userData, token);
+      console.log('Creating user with data:', userData);
+      const result = await apiClient.post(ENDPOINTS.USERS.CREATE, userData, token);
+      console.log('User creation result:', result);
       
       Alert.alert(
         'Success!',
@@ -187,15 +189,10 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-        >
-          <Icon name="close" size={24} color="#374151" />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} />
         <Text style={styles.headerTitle}>Create Booth Boy</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Icon name="power-settings-new" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <AppIcon name="power-settings-new" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
@@ -282,13 +279,13 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
             style={styles.boothSelectionButton}
             onPress={() => setShowBoothSelection(true)}
           >
-            <Icon name="location-on" size={20} color="#007AFF" />
+            <AppIcon name="location-on" size={20} color="#007AFF" />
             <Text style={styles.boothSelectionText}>
               {formData.assigned_booths.length > 0 
                 ? `${formData.assigned_booths.length} booths selected`
                 : 'Select Booths'}
             </Text>
-            <Icon name="arrow-forward-ios" size={16} color="#007AFF" />
+            <AppIcon name="arrow-forward-ios" size={16} color="#007AFF" />
           </TouchableOpacity>
           {errors.assigned_booths && <Text style={styles.errorText}>{errors.assigned_booths}</Text>}
         </View>
@@ -311,7 +308,7 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
           onPress={handleSubmit}
           disabled={loading || !isFormValid()}
         >
-          <Icon name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <AppIcon name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.submitButtonText}>
             {loading ? 'Creating Booth Boy...' : 'Create Booth Boy'}
           </Text>
@@ -341,9 +338,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  backButton: {
-    padding: 4,
-  },
+
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',

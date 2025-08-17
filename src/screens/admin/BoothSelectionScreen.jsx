@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { apiClient } from '../../services/api/client';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AppIcon, BackButton } from '../../components/common';
 
 const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
   const { token } = useSelector(state => state.auth);
@@ -87,7 +87,12 @@ const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
       };
       
       console.log('Booths response:', boothsData);
-      const boothsData = await apiClient.get('/general/booths', token, bodyData);
+      const boothsData = await apiClient.get('/general/booths', token, {
+    state_id: 'S04',
+    district_id: 'S0429',
+    assembly_id: '195'
+  });
+
       
       if (Array.isArray(boothsData)) {
         setBooths(boothsData);
@@ -109,7 +114,7 @@ const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
         <Text style={styles.dropdownText}>
           {value || `Select ${label}`}
         </Text>
-        <Icon name="arrow-drop-down" size={24} color="#666" />
+        <AppIcon name="arrow-drop-down" size={24} color="#666" />
       </TouchableOpacity>
       <Text style={styles.optionsCount}>{options.length} options</Text>
     </View>
@@ -118,13 +123,11 @@ const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
+        <BackButton onPress={onBack} />
         <Text style={styles.title}>Select Polling Booths</Text>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location Selection</Text>
           
@@ -155,21 +158,19 @@ const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
           {loading ? (
             <Text style={styles.loadingText}>Loading booths...</Text>
           ) : (
-            <ScrollView style={styles.boothsList}>
-              {Array.isArray(booths) && booths.length > 0 ? (
-                booths.map((booth) => (
-                  <View key={booth.partId} style={styles.boothCard}>
-                    <Text style={styles.boothNumber}>#{booth.partNumber}</Text>
-                    <Text style={styles.boothName}>{booth.partName}</Text>
-                    <Text style={styles.boothId}>ID: {booth.partId}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.loadingText}>
-                  {loading ? 'Loading booths...' : 'No booths found'}
-                </Text>
-              )}
-            </ScrollView>
+            Array.isArray(booths) && booths.length > 0 ? (
+              booths.map((booth) => (
+                <View key={booth.partId} style={styles.boothCard}>
+                  <Text style={styles.boothNumber}>#{booth.partNumber}</Text>
+                  <Text style={styles.boothName}>{booth.partName}</Text>
+                  <Text style={styles.boothId}>ID: {booth.partId}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.loadingText}>
+                {loading ? 'Loading booths...' : 'No booths found'}
+              </Text>
+            )
           )}
         </View>
       </ScrollView>
@@ -251,9 +252,7 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 5,
   },
-  boothsList: {
-    maxHeight: 300,
-  },
+
   boothCard: {
     backgroundColor: '#fff',
     padding: 15,
