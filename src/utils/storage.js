@@ -105,5 +105,11 @@ export const storage = {
 
   async clearAll() {
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+  },
+
+  async clearUserSpecificCache() {
+    const keysToKeep = [STORAGE_KEYS.SAVED_CREDENTIALS]; // Keep saved credentials
+    const keysToClear = Object.values(STORAGE_KEYS).filter(key => !keysToKeep.includes(key));
+    await AsyncStorage.multiRemove(keysToClear);
   }
 };

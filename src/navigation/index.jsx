@@ -4,6 +4,7 @@ import LokSetuLogin from '../LokSetuLogin';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import SuperAdminDashboardScreen from '../screens/admin/SuperAdminDashboardScreen';
 import { BoothBoyDashboard } from '../screens/boothboy';
+import { USER_ROLES } from '../services/api/config';
 
 export const AppNavigator = () => {
   const { user, token } = useSelector((state) => state.auth);
@@ -15,11 +16,11 @@ export const AppNavigator = () => {
 
   // Route based on user role
   switch (user.role) {
-    case 'super_admin':
-    case 'Admin':
+    case USER_ROLES.SUPER_ADMIN:
       return <SuperAdminDashboardScreen />;
-    case 'admin':
+    case USER_ROLES.ADMIN:
       return <AdminDashboardScreen />;
+    case USER_ROLES.BOOTH_BOY:
     default:
       return <BoothBoyDashboard boothBoyInfo={user} />;
   }

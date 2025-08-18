@@ -110,6 +110,12 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
   const slideAnim = useRef(new Animated.Value(0)).current;
   const roleInfoAnim = useRef(new Animated.Value(0)).current;
   
+  // Preloaded credentials
+  const preloadedCredentials = {
+    super_admin: { username: 'nikh01', password: 'nikh123' },
+    admin: { username: 'admin', password: 'admin123' }
+  };
+  
   const roleConfig = getRoleConfig(selectedRole);
   
   const {
@@ -127,6 +133,12 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
   } = useAuthFlow(selectedRole, onLoginSuccess);
 
   useEffect(() => {
+    // Preload credentials based on role
+    if (preloadedCredentials[selectedRole]) {
+      updateField('username', preloadedCredentials[selectedRole].username);
+      updateField('password', preloadedCredentials[selectedRole].password);
+    }
+    
     Animated.parallel([
       Animated.timing(fadeAnim, { 
         toValue: 1, 
@@ -140,7 +152,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
         useNativeDriver: true
       })
     ]).start();
-  }, []);
+  }, [selectedRole]);
 
   const toggleRoleInfo = () => {
     setShowRoleInfo(!showRoleInfo);
@@ -226,7 +238,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
         title={isLoading ? 'Authenticating...' : `Login as ${roleConfig.title}`}
         onPress={handlePasswordLogin}
         colors={roleConfig.colors}
-        disabled={!formState.validation.username || !formState.validation.password || isLoading}
+        disabled={isLoading}
         style={styles.loginButton}
         icon="log-in-outline"
       />

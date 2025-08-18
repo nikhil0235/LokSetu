@@ -9,16 +9,17 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { apiClient } from '../../services/api/client';
-import { ENDPOINTS } from '../../services/api/config';
+import { useSelector, useDispatch } from 'react-redux';
+import { createUser } from '../../store/userSlice';
 import InputField from '../../components/common/InputField';
 import PasswordInputField from '../../components/common/PasswordInputField';
 import BoothSelectionScreen from './BoothSelectionScreen';
 import { AppIcon, BackButton } from '../../components/common';
 
 const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
+  const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
+  const { isLoading } = useSelector(state => state.users);
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -118,12 +119,10 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       return;
     }
 
-    setLoading(true);
     try {
       const { confirmPassword, ...userData } = formData;
-      console.log('Creating user with data:', userData);
-      const result = await apiClient.post(ENDPOINTS.USERS.CREATE, userData, token);
-      console.log('User creation result:', result);
+      
+      await dispatch(createUser(userData)).unwrap();
       
       Alert.alert(
         'Success!',
@@ -150,15 +149,13 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
         ]
       );
     } catch (error) {
-      const errorMessage = error.message || 'Failed to create booth boy. Please try again.';
-      if (error.message?.includes('username')) {
+      const errorMessage = error || 'Failed to create booth boy. Please try again.';
+      if (errorMessage?.includes('username')) {
         setErrors(prev => ({ ...prev, username: 'Username already exists' }));
-      } else if (error.message?.includes('email')) {
+      } else if (errorMessage?.includes('email')) {
         setErrors(prev => ({ ...prev, email: 'Email already exists' }));
       }
       Alert.alert('Error', errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -304,13 +301,13 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, (loading || !isFormValid()) && styles.submittingButton]}
+          style={[styles.submitButton, (isLoading || !isFormValid()) && styles.submittingButton]}
           onPress={handleSubmit}
-          disabled={loading || !isFormValid()}
+          disabled={isLoading || !isFormValid()}
         >
           <AppIcon name="person-add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.submitButtonText}>
-            {loading ? 'Creating Booth Boy...' : 'Create Booth Boy'}
+            {isLoading ? 'Creating Booth Boy...' : 'Create Booth Boy'}
           </Text>
         </TouchableOpacity>
       </View>

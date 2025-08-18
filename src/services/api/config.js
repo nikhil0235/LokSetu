@@ -1,7 +1,14 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://voterlistmanagment.onrender.com',
+  // BASE_URL: 'https://voterlistmanagment.onrender.com',
+  BASE_URL : 'http://192.168.1.5:8000',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3
+};
+
+export const USER_ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  ADMIN: 'admin',
+  BOOTH_BOY: 'booth_boy'
 };
 
 export const ENDPOINTS = {

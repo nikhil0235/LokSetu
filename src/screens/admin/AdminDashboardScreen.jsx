@@ -8,46 +8,52 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { AppIcon } from '../../components/common';
+import { loadAdminDashboardData } from '../../store/slices/adminDashboardSlice';
+import CreatedUsersScreen from './CreatedUsersScreen';
+import { logout } from '../../store/authSlice';
 
 const { width } = Dimensions.get('window');
 
-const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onMenuPress }) => {
+const AdminDashboardScreen = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
-  const [dashboardData, setDashboardData] = useState({
-    totalBoothBoys: user?.created_users?.length || 0,
-    totalBooths: 45,
-    dataProgress: 78,
-    activeToday: 12,
-    recentActivities: [
-      { id: 1, action: 'Created booth boy "Suresh Patel"', time: '2h ago', type: 'success' },
-      { id: 2, action: 'Assigned booth #145 to Meera Joshi', time: '4h ago', type: 'info' },
-      { id: 3, action: 'Data export completed', time: '6h ago', type: 'success' },
-      { id: 4, action: 'Booth boy "Ravi" went offline', time: '8h ago', type: 'warning' },
-    ]
-  });
+  const { stats, adminInfo, loading, lastUpdated } = useSelector(state => state.adminDashboard);
   const [refreshing, setRefreshing] = useState(false);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [currentScreen, setCurrentScreen] = useState('dashboard');
+
+  const handleNavigate = (screen) => {
+    setCurrentScreen(screen);
+  };
+
+  const handleBack = () => {
+    setCurrentScreen('dashboard');
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setDashboardData(prev => ({
-        ...prev,
-        totalBoothBoys: user?.created_users?.length || 0,
-        activeToday: prev.activeToday + Math.floor(Math.random() * 5),
-      }));
-      setRefreshing(false);
-    }, 1000);
+    console.log('Admin user data:', JSON.stringify(user, null, 2));
+    setRefreshing(false);
   };
 
-  // Update booth boys count when user data changes
   useEffect(() => {
-    setDashboardData(prev => ({
-      ...prev,
-      totalBoothBoys: user?.created_users?.length || 0,
-    }));
-  }, [user?.created_users]);
+    dispatch(loadAdminDashboardData(false));
+  }, [dispatch]);
+
+  useEffect(() => {
+    setRecentActivities([
+      { id: 1, action: `Created ${stats.totalCreatedUsers} users`, time: 'Now', type: 'success' },
+      { id: 2, action: `${stats.totalAssignedBooths} booths assigned`, time: 'Now', type: 'info' },
+      { id: 3, action: `${stats.totalAssignedConstituencies} constituencies`, time: 'Now', type: 'success' },
+      { id: 4, action: `Admin: ${adminInfo.fullname || user.fullname}`, time: 'Now', type: 'info' },
+    ]);
+  }, [stats, adminInfo, user]);
 
   const StatCard = ({ iconName, title, value, color, onPress }) => {
     return (
@@ -96,6 +102,16 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
     );
   };
 
+  // Handle different screen navigation
+  if (currentScreen === 'createdUsers') {
+    return (
+      <CreatedUsersScreen 
+        onBack={handleBack}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <ScrollView 
       style={styles.container}
@@ -103,14 +119,11 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <AppIcon name="menu" size={28} color="#374151" />
-        </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.adminName}>{user?.full_name || user?.username || 'Admin'}</Text>
           <Text style={styles.greeting}>Admin Dashboard & Controls</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <View style={styles.logoutIconContainer}>
             <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
           </View>
@@ -121,31 +134,31 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
         <View style={styles.statsRow}>
           <StatCard
             iconName="group"
-            title="Total Booth Boys"
-            value={dashboardData.totalBoothBoys}
+            title="Created Users"
+            value={stats.totalCreatedUsers}
             color="#3B82F6"
-            onPress={() => onNavigate('createdBoothBoys')}
+            onPress={() => handleNavigate('createdUsers')}
           />
           <StatCard
             iconName="location-on"
-            title="Total Booths"
-            value={dashboardData.totalBooths}
+            title="Assigned Booths"
+            value={stats.totalAssignedBooths}
             color="#10B981"
-            onPress={() => onNavigate('boothList')}
+            onPress={() => handleNavigate('boothList')}
           />
         </View>
         <View style={styles.statsRow}>
           <StatCard
-            iconName="bar-chart"
-            title="Data Progress"
-            value={`${dashboardData.dataProgress}%`}
+            iconName="public"
+            title="Constituencies"
+            value={stats.totalAssignedConstituencies}
             color="#F59E0B"
             onPress={() => {}}
           />
           <StatCard
             iconName="online-prediction"
-            title="Active Today"
-            value={dashboardData.activeToday}
+            title="Last Updated"
+            value={lastUpdated ? 'Now' : 'Never'}
             color="#8B5CF6"
             onPress={() => {}}
           />
@@ -160,21 +173,21 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
             title="Create Booth Boy"
             description="Add new booth boy"
             color="#3B82F6"
-            onPress={() => onNavigate('createBoothBoy')}
+            onPress={() => handleNavigate('createBoothBoy')}
           />
           <QuickActionCard
             iconName="assignment"
             title="Assign Booths"
             description="Manage booth assignments"
             color="#10B981"
-            onPress={() => onNavigate('assignBooths')}
+            onPress={() => handleNavigate('assignBooths')}
           />
           <QuickActionCard
             iconName="assessment"
             title="Reports"
             description="View analytics"
             color="#8B5CF6"
-            onPress={() => onNavigate('reports')}
+            onPress={() => handleNavigate('reports')}
           />
           <QuickActionCard
             iconName="settings"
@@ -189,30 +202,22 @@ const AdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onM
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Activities</Text>
         <View style={styles.activitiesContainer}>
-          {dashboardData.recentActivities.map((activity) => (
+          {recentActivities.map((activity) => (
             <ActivityItem key={activity.id} activity={activity} />
           ))}
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Data Collection Progress</Text>
+        <Text style={styles.sectionTitle}>Admin Summary</Text>
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Overall Progress</Text>
-            <Text style={styles.progressPercentage}>{dashboardData.dataProgress}%</Text>
-          </View>
-          <View style={styles.progressBarContainer}>
-            <View 
-              style={[
-                styles.progressBar, 
-                { width: `${dashboardData.dataProgress}%` }
-              ]} 
-            />
+            <Text style={styles.progressTitle}>Data Overview</Text>
+            <Text style={styles.progressPercentage}>{stats.totalCreatedUsers + stats.totalAssignedBooths}</Text>
           </View>
           <View style={styles.progressStats}>
-            <Text style={styles.progressStat}>23 booth boys active</Text>
-            <Text style={styles.progressStat}>45 booths assigned</Text>
+            <Text style={styles.progressStat}>{stats.totalCreatedUsers} users created</Text>
+            <Text style={styles.progressStat}>{stats.totalAssignedBooths} booths assigned</Text>
           </View>
         </View>
       </View>
@@ -393,13 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    marginRight: 12,
-  },
+
   activityContent: {
     flex: 1,
   },
@@ -411,6 +410,13 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  activityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
+    marginRight: 12,
   },
   progressCard: {
     backgroundColor: '#FFFFFF',

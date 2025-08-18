@@ -4,4 +4,5 @@
 // export { useAdmin } from './useAdmin';
 // export { useDebounce } from './useDebounce';
 // export { usePermissions } from './usePermissions';
+export { useAdminData } from './useAdminData';
 

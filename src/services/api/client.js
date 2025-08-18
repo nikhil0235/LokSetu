@@ -42,47 +42,24 @@ class ApiClient {
   }
   
 get(endpoint, token, params = null) {
-  // Special handling for assembly endpoint with GET and query params
-  if (endpoint === '/general/assembly' && params) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
+  };
+
+  if (params) {
     const query = new URLSearchParams(params).toString();
     const urlWithParams = `${this.baseURL}${endpoint}?${query}`;
-
-    const headers = {
-      ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
-    };
-
-    console.log('API Assembly Request:', urlWithParams, { method: 'GET', headers });
-
-    return fetch(urlWithParams, {
-      method: 'GET',
-      headers
-    }).then(response => {
-      if (!response.ok) {
-        console.log('Assembly API failed, response status:', response.status, response.statusText);
-      }
-      return response.json();
-    });
-  }
-
-  if (params && endpoint.includes('/general/')) {
-    // Convert params into query string
-    const query = new URLSearchParams(params).toString();
-    const urlWithParams = `${this.baseURL}${endpoint}?${query}`;
-
-    const headers = {
-      ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
-    };
-
-    // 🔍 Debug log
-    console.log("API Request:", urlWithParams, { method: 'GET', headers });
-
+    
+    console.log('API Request:', urlWithParams, { method: 'GET', headers });
+    
     return fetch(urlWithParams, {
       method: 'GET',
       headers
     }).then(response => {
       if (!response.ok) {
         return response.text().then(errorText => {
-          console.error("API Error Response:", response.status, errorText);
+          console.error('API Error Response:', response.status, errorText);
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         });
       }
@@ -90,8 +67,20 @@ get(endpoint, token, params = null) {
     });
   }
 
-  // default GET
-  return this.request(endpoint, { method: 'GET' }, token);
+  // Default GET without params
+  console.log('API GET Request:', endpoint, 'Headers:', headers);
+  return fetch(`${this.baseURL}${endpoint}`, {
+    method: 'GET',
+    headers
+  }).then(response => {
+    if (!response.ok) {
+      return response.text().then(errorText => {
+        console.error('API Error Response:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      });
+    }
+    return response.json();
+  });
 }
 
 
@@ -157,7 +146,11 @@ get(endpoint, token, params = null) {
       }
       
       const url = `${this.baseURL}${endpoint}`;
-      console.log('User creation request:', url, formData.toString());
+      console.log('🔥 USER CREATION REQUEST:');
+      console.log('URL:', url);
+      console.log('Form Data:', formData.toString());
+      console.log('Token:', token);
+      
       return fetch(url, {
         method: 'POST',
         headers: {
@@ -166,9 +159,13 @@ get(endpoint, token, params = null) {
         },
         body: formData.toString()
       }).then(response => {
-        console.log('User creation response status:', response.status);
+        console.log('🔥 USER CREATION RESPONSE:');
+        console.log('Status:', response.status);
+        console.log('Status Text:', response.statusText);
+        console.log('Headers:', response.headers);
+        
         return response.text().then(responseText => {
-          console.log('User creation response text:', responseText);
+          console.log('🔥 RESPONSE BODY:', responseText);
           if (!response.ok) {
             let error;
             try {

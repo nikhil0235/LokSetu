@@ -1,18 +1,28 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '../../services/api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createUser } from '../userSlice';
 
 const DASHBOARD_STORAGE_KEY = '@dashboard_data';
 
-// Async thunks
+// Load dashboard data with caching logic
 export const loadDashboardData = createAsyncThunk(
   'dashboard/loadData',
-  async (_, { getState, rejectWithValue }) => {
+  async (forceRefresh = false, { getState, rejectWithValue }) => {
     try {
+      // First try to load from cache if not forcing refresh
+      if (!forceRefresh) {
+        const cachedData = await AsyncStorage.getItem(DASHBOARD_STORAGE_KEY);
+        if (cachedData) {
+          console.log('Loading dashboard data from cache');
+          return JSON.parse(cachedData);
+        }
+      }
+
+      console.log('Loading dashboard data from network');
       const { auth } = getState();
       const { token, user } = auth;
       
-      // Get state_id from user profile or default to S04
       const stateId = user?.state_id || 'S04';
       const districtId = user?.district_id || 'S0429';
       const assemblyId = user?.assembly_id || '195';
@@ -25,18 +35,10 @@ export const loadDashboardData = createAsyncThunk(
           district_id: districtId,
           assembly_id: assemblyId
         }),
-
         apiClient.get('/general/assembly', token, {
           state_id: stateId,
         })
       ]);
-
-      console.log('API Responses:');
-      console.log('State ID used:', stateId);
-      console.log('Booths Response:', boothsResponse);
-      console.log('Constituencies Response:', constituenciesResponse);
-      console.log('Constituencies Response type:', typeof constituenciesResponse);
-      console.log('Constituencies Response length:', constituenciesResponse?.length);
 
       const dashboardData = {
         users: usersResponse || [],
@@ -48,7 +50,6 @@ export const loadDashboardData = createAsyncThunk(
 
       // Save to AsyncStorage
       await AsyncStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardData));
-
       return dashboardData;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -106,6 +107,38 @@ const dashboardSlice = createSlice({
       state.lastUpdated = null;
       AsyncStorage.removeItem(DASHBOARD_STORAGE_KEY);
     },
+    addNewUser: (state, action) => {
+      const newUser = action.payload;
+      state.users.push(newUser);
+      
+      // Update stats immediately
+      const admins = state.users.filter(u => 
+        u.Role === 'Admin' || u.Role === 'admin' || u.Role === 'super_admin'
+      );
+      const boothBoys = state.users.filter(u => 
+        u.Role === 'booth_boy' || u.Role === 'boothboy'
+      );
+      
+      state.admins = admins;
+      state.boothBoys = boothBoys;
+      state.stats = {
+        totalAdmins: admins.length,
+        totalBoothBoys: boothBoys.length,
+        totalBooths: state.booths.length,
+        totalVoters: state.voters.length,
+        totalConstituencies: state.constituencies.length
+      };
+      
+      // Update AsyncStorage
+      const dashboardData = {
+        users: state.users,
+        voters: state.voters,
+        booths: state.booths,
+        constituencies: state.constituencies,
+        lastUpdated: new Date().toISOString()
+      };
+      AsyncStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardData));
+    },
     updateStats: (state) => {
       const admins = state.users.filter(u => 
         u.Role === 'Admin' || u.Role === 'admin' || u.Role === 'super_admin'
@@ -161,9 +194,17 @@ const dashboardSlice = createSlice({
           state.lastUpdated = action.payload.lastUpdated;
           dashboardSlice.caseReducers.updateStats(state);
         }
+      })
+      .addCase(createUser.fulfilled, (state, action) => {
+        // Add new user to dashboard state
+        const newUser = action.payload.user || action.payload;
+        if (newUser) {
+          state.users.push(newUser);
+          dashboardSlice.caseReducers.updateStats(state);
+        }
       });
   }
 });
 
-export const { clearDashboardData, updateStats } = dashboardSlice.actions;
+export const { clearDashboardData, updateStats, addNewUser } = dashboardSlice.actions;
 export default dashboardSlice.reducer;

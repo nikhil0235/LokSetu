@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AppIcon } from './common';
 
-const ConstituencyCard = ({ constituency }) => {
+const ConstituencyCard = ({ constituency, onPress }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => onPress && onPress(constituency)}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.name}>{constituency.asmblyName}</Text>
@@ -29,7 +29,12 @@ const ConstituencyCard = ({ constituency }) => {
           <Text style={styles.detailText}>AC ID: {constituency.acId}</Text>
         </View>
       </View>
-    </View>
+      
+      <View style={styles.footer}>
+        <Text style={styles.tapHint}>Tap to view voters</Text>
+        <AppIcon name="arrow-forward-ios" size={14} color="#3B82F6" />
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -88,6 +93,20 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: '#666',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  tapHint: {
+    fontSize: 12,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
 });
 

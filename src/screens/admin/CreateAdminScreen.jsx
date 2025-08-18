@@ -9,9 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { apiClient } from '../../services/api/client';
-import { ENDPOINTS } from '../../services/api/config';
+import { useSelector, useDispatch } from 'react-redux';
+import { createUser } from '../../store/userSlice';
 import InputField from '../../components/common/InputField';
 import PasswordInputField from '../../components/common/PasswordInputField';
 
@@ -27,7 +26,9 @@ const icons = {
 };
 
 const CreateAdminScreen = ({ onBack, onLogout }) => {
+  const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
+  const { isLoading } = useSelector(state => state.users);
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -118,16 +119,14 @@ const CreateAdminScreen = ({ onBack, onLogout }) => {
       return;
     }
 
-    setLoading(true);
     try {
       const { confirmPassword, assigned_constituencies, ...userData } = formData;
       const userPayload = {
         ...userData,
         assigned_booths: assigned_constituencies.join(',')
       };
-      console.log('Creating admin with data:', userPayload);
-      const result = await apiClient.post(ENDPOINTS.USERS.CREATE, userPayload, token);
-      console.log('Admin creation result:', result);
+      
+      await dispatch(createUser(userPayload)).unwrap();
       
       Alert.alert(
         'Success!',
@@ -155,15 +154,13 @@ const CreateAdminScreen = ({ onBack, onLogout }) => {
         ]
       );
     } catch (error) {
-      const errorMessage = error.message || 'Failed to create admin. Please try again.';
-      if (error.message?.includes('username')) {
+      const errorMessage = error || 'Failed to create admin. Please try again.';
+      if (errorMessage?.includes('username')) {
         setErrors(prev => ({ ...prev, username: 'Username already exists' }));
-      } else if (error.message?.includes('email')) {
+      } else if (errorMessage?.includes('email')) {
         setErrors(prev => ({ ...prev, email: 'Email already exists' }));
       }
       Alert.alert('Error', errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -316,13 +313,13 @@ const CreateAdminScreen = ({ onBack, onLogout }) => {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, (loading || !isFormValid()) && styles.submittingButton]}
+          style={[styles.submitButton, (isLoading || !isFormValid()) && styles.submittingButton]}
           onPress={handleSubmit}
-          disabled={loading || !isFormValid()}
+          disabled={isLoading || !isFormValid()}
         >
           <Text style={[styles.iconText, { color: '#FFFFFF' }]}>{icons.Shield}</Text>
           <Text style={styles.submitButtonText}>
-            {loading ? 'Creating Admin...' : 'Create Admin'}
+            {isLoading ? 'Creating Admin...' : 'Create Admin'}
           </Text>
         </TouchableOpacity>
       </View>

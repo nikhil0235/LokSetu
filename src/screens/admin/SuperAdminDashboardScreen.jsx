@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppIcon } from '../../components/common';
-import { loadDashboardData, loadCachedDashboardData } from '../../store/slices/dashboardSlice';
+import { loadDashboardData } from '../../store/slices/dashboardSlice';
 
 const { width } = Dimensions.get('window');
 
@@ -24,14 +24,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      const result = await dispatch(loadDashboardData()).unwrap();
-      console.log('Dashboard - Load result:', result);
-      console.log('Dashboard - Current stats:', stats);
-      console.log('Dashboard - Users data:', stats.totalAdmins + stats.totalBoothBoys);
-      console.log('Dashboard - Voters data:', stats.totalVoters);
-      console.log('Dashboard - Booths data:', stats.totalBooths);
-      console.log('Dashboard - Constituencies data:', stats.totalConstituencies);
-      
+      const result = await dispatch(loadDashboardData(true)).unwrap(); // Force refresh from network
       setRecentActivities([
         { id: 1, action: `${stats.totalAdmins} admins in system`, time: 'Now', type: 'info' },
         { id: 2, action: `${stats.totalBoothBoys} booth boys active`, time: 'Now', type: 'success' },
@@ -43,10 +36,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    // Load cached data only
-    dispatch(loadCachedDashboardData());
-  }, [dispatch]);
+  // Data is already loaded during login, no need to load cached data
 
   useEffect(() => {
     setRecentActivities([
@@ -54,7 +44,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
       { id: 2, action: `${stats.totalBoothBoys} booth boys active`, time: 'Now', type: 'success' },
       { id: 3, action: `${stats.totalBooths} booths available`, time: 'Now', type: 'info' }
     ]);
-  }, [stats]);
+  }, [stats.totalAdmins, stats.totalBoothBoys, stats.totalBooths]);
 
   const StatCard = ({ iconName, title, value, color, onPress }) => {
     return (
@@ -143,12 +133,21 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
         </View>
         <View style={styles.statsRow}>
           <StatCard
+            iconName="how-to-vote"
+            title="Total Voters"
+            value={stats.totalVoters}
+            color="#3B82F6"
+            onPress={() => onNavigate('allVoters')}
+          />
+          <StatCard
             iconName="location-on"
             title="Total Booths"
             value={stats.totalBooths}
             color="#10B981"
             onPress={() => onNavigate('boothList')}
           />
+        </View>
+        <View style={styles.statsRow}>
           <StatCard
             iconName="public"
             title="Constituencies"
@@ -156,8 +155,6 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
             color="#F59E0B"
             onPress={() => onNavigate('constituenciesList')}
           />
-        </View>
-        <View style={styles.statsRow}>
           <StatCard
             iconName="bar-chart"
             title="Data Progress"
@@ -165,14 +162,8 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
             color="#EF4444"
             onPress={() => {}}
           />
-          <StatCard
-            iconName="online-prediction"
-            title="Active Today"
-            value={0}
-            color="#06B6D4"
-            onPress={() => {}}
-          />
         </View>
+
       </View>
 
       <View style={styles.section}>

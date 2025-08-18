@@ -31,13 +31,17 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSucce
     try {
       let credentials = {
         username: loginData.username,
-        password: loginData.password,
-        selectedRole: selectedRole
+        password: loginData.password
       };
       
-      console.warn("logninData", credentials);
+      console.log("🔐 Admin Login Attempt:");
+      console.log("Username:", credentials.username);
+      console.log("Password length:", credentials.password?.length);
+      console.log("Expected Role:", selectedRole);
       
       const result = await dispatch(loginUser(credentials)).unwrap();
+      
+      console.log("✅ Login successful:", result);
       
       const userData = {
         ...result,
@@ -46,6 +50,7 @@ const AdminLoginScreen = ({ onNavigate, loginData, updateLoginData, onLoginSucce
       
       onLoginSuccess(userData);
     } catch (error) {
+      console.error("❌ Login failed:", error);
       Alert.alert('Login Failed', error.message || 'Invalid admin credentials');
     }
   };

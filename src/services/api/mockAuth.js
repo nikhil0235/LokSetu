@@ -1,9 +1,11 @@
+import { USER_ROLES } from './config';
+
 // WARNING: In production, use secure credential management
 export const mockCredentials = [
   { 
     username: 'super_admin', 
     password: process.env.SUPER_ADMIN_PASSWORD || 'super123', 
-    role: 'super_admin',
+    role: USER_ROLES.SUPER_ADMIN,
     name: 'Super Administrator',
     email: 'super@loksetu.com',
     permissions: ['all']
@@ -11,7 +13,7 @@ export const mockCredentials = [
   { 
     username: 'admin1', 
     password: process.env.ADMIN_PASSWORD || 'admin123', 
-    role: 'admin',
+    role: USER_ROLES.ADMIN,
     name: 'Rajesh Kumar',
     email: 'rajesh@loksetu.com',
     constituency: 'Constituency-1',
@@ -20,7 +22,7 @@ export const mockCredentials = [
   { 
     username: 'admin2', 
     password: process.env.ADMIN_PASSWORD || 'admin123', 
-    role: 'admin',
+    role: USER_ROLES.ADMIN,
     name: 'Priya Singh',
     email: 'priya@loksetu.com',
     constituency: 'Constituency-2',
@@ -29,7 +31,7 @@ export const mockCredentials = [
   { 
     username: 'admin3', 
     password: process.env.ADMIN_PASSWORD || 'admin123', 
-    role: 'admin',
+    role: USER_ROLES.ADMIN,
     name: 'Amit Sharma',
     email: 'amit@loksetu.com',
     constituency: 'Constituency-3',
@@ -38,7 +40,7 @@ export const mockCredentials = [
   { 
     username: 'booth1', 
     password: process.env.BOOTH_PASSWORD || 'booth123', 
-    role: 'booth_boy',
+    role: USER_ROLES.BOOTH_BOY,
     name: 'Suresh Patel',
     email: 'suresh@loksetu.com',
     assignedBooths: ['Booth-145', 'Booth-146'],

@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '../services/api/client';
 import { ENDPOINTS } from '../services/api/config';
+import { userService } from '../services/api/user.service';
+import { addNewUser } from './slices/dashboardSlice';
 
 // Async thunks
 export const createUsers = createAsyncThunk(
@@ -17,8 +19,8 @@ export const createUsers = createAsyncThunk(
 );
 
 export const createUser = createAsyncThunk(
-  'users/createUser',
-  async (userData, { rejectWithValue, getState }) => {
+  'users/',
+  async (userData, { rejectWithValue, getState, dispatch }) => {
     try {
       const { auth } = getState();
       const userPayload = {
@@ -32,10 +34,41 @@ export const createUser = createAsyncThunk(
       };
       const response = await apiClient.post(ENDPOINTS.USERS.CREATE, userPayload, auth.token);
       console.log("User created successfully:", response);
+      
+      // Update dashboard with new user
+      const newUser = response.user || response;
+      if (newUser && newUser.username) {
+        const userForDashboard = {
+          UserID: newUser.user_id || newUser.UserID,
+          Username: newUser.username || newUser.Username,
+          FullName: newUser.full_name || newUser.FullName,
+          Email: newUser.email || newUser.Email,
+          Phone: newUser.phone || newUser.Phone,
+          Role: newUser.role || newUser.Role,
+          AssignedBoothIDs: newUser.assigned_booths || newUser.AssignedBoothIDs,
+          Created_by: newUser.created_by || newUser.Created_by
+        };
+        dispatch(addNewUser(userForDashboard));
+      }
+      
       return response;
     } catch (error) {
       console.error("Error creating user:", error);
       return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateUserConstituencies = createAsyncThunk(
+  'users/updateUserConstituencies',
+  async ({ userId, constituencies }, { rejectWithValue }) => {
+    try {
+      const response = await userService.updateUser(userId, {
+        assigned_constituencies: constituencies
+      });
+      return { userId, constituencies, ...response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -100,11 +133,20 @@ const userSlice = createSlice({
       .addCase(createUser.fulfilled, (state, action) => {
         state.isLoading = false;
         // Handle response - could be user object or success message
-        if (action.payload.user) {
-          state.users.push(action.payload.user);
-        } else {
-          // If response doesn't have user object, add the created user data
-          state.users.push(action.payload);
+        const newUser = action.payload.user || action.payload;
+        if (newUser && newUser.username) {
+          // Ensure proper structure for dashboard compatibility
+          const userForState = {
+            UserID: newUser.user_id || newUser.UserID,
+            Username: newUser.username || newUser.Username,
+            FullName: newUser.full_name || newUser.FullName,
+            Email: newUser.email || newUser.Email,
+            Phone: newUser.phone || newUser.Phone,
+            Role: newUser.role || newUser.Role,
+            AssignedBoothIDs: newUser.assigned_booths || newUser.AssignedBoothIDs,
+            Created_by: newUser.created_by || newUser.Created_by
+          };
+          state.users.push(userForState);
         }
       })
       .addCase(createUser.rejected, (state, action) => {
@@ -124,6 +166,24 @@ const userSlice = createSlice({
         }
       })
       .addCase(updateUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateUserConstituencies.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateUserConstituencies.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const { userId, constituencies } = action.payload;
+        const userIndex = state.users.findIndex(user => 
+          user.UserID === userId || user.user_id === userId
+        );
+        if (userIndex !== -1) {
+          state.users[userIndex].assigned_constituencies = constituencies;
+        }
+      })
+      .addCase(updateUserConstituencies.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })

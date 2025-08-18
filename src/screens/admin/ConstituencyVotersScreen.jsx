@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
@@ -11,60 +10,56 @@ import { useSelector, useDispatch } from 'react-redux';
 import { loadDashboardData } from '../../store/slices/dashboardSlice';
 import { AppIcon, BackButton } from '../../components/common';
 
-const AllAdminsScreen = ({ onBack, onLogout }) => {
+const ConstituencyVotersScreen = ({ onBack, onLogout, assemblyNo, constituencyName }) => {
   const dispatch = useDispatch();
-  const { admins } = useSelector(state => state.dashboard);
+  const { voters } = useSelector(state => state.dashboard);
   const [refreshing, setRefreshing] = useState(false);
+
+  const constituencyVoters = useMemo(() => {
+    console.log('Filtering voters for assembly no:', assemblyNo);
+    console.log('Available voters:', voters.length);
+    const filtered = voters.filter(voter => voter.ConstituencyID === assemblyNo);
+    console.log('Filtered voters:', filtered.length);
+    return filtered;
+  }, [voters, assemblyNo]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(loadDashboardData(true)).unwrap(); // Force refresh from network
+      await dispatch(loadDashboardData(true)).unwrap();
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
     setRefreshing(false);
   };
 
-  const AdminCard = ({ admin }) => (
-    <View style={styles.adminCard}>
+  const VoterCard = ({ voter }) => (
+    <View style={styles.voterCard}>
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{admin.FullName || admin.Username}</Text>
-          <Text style={styles.userRole}>{admin.Role}</Text>
+          <Text style={styles.userName}>{voter.Voter_fName} {voter.Voter_lName}</Text>
+          <Text style={styles.userRole}>EPIC: {voter.VoterEPIC}</Text>
         </View>
         <View style={styles.statusContainer}>
-          <AppIcon name="circle" size={8} color="#10B981" />
-          <Text style={[styles.statusText, { color: '#10B981' }]}>Active</Text>
+          <Text style={styles.genderAge}>{voter.Gender}, {voter.Age}y</Text>
         </View>
       </View>
       
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Username:</Text>
-          <Text style={styles.infoValue}>{admin.Username}</Text>
+          <Text style={styles.infoLabel}>Mobile:</Text>
+          <Text style={styles.infoValue}>{voter.Mobile}</Text>
         </View>
         
-        {admin.Phone && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone:</Text>
-            <Text style={styles.infoValue}>{admin.Phone}</Text>
-          </View>
-        )}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Booth:</Text>
+          <Text style={styles.infoValue}>{voter.BoothID}</Text>
+        </View>
         
-        {admin.Email && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{admin.Email}</Text>
-          </View>
-        )}
-        
-        {admin.assigned_scope && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Assigned Area:</Text>
-            <Text style={styles.infoValue}>{admin.assigned_scope}</Text>
-          </View>
-        )}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Preference:</Text>
+          <Text style={[styles.infoValue, { color: '#3B82F6', fontWeight: 'bold' }]}>{voter.VotingPreference}</Text>
+        </View>
       </View>
     </View>
   );
@@ -73,16 +68,16 @@ const AllAdminsScreen = ({ onBack, onLogout }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <BackButton onPress={onBack} />
-        <Text style={styles.headerTitle}>All Admins</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <AppIcon name="power-settings-new" size={20} color="#EF4444" />
-        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>{constituencyName}</Text>
+          <Text style={styles.headerSubtitle}>Constituency Voters</Text>
+        </View>
       </View>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Total Admins</Text>
-        <Text style={styles.summaryCount}>{admins.length}</Text>
-        <Text style={styles.summarySubtitle}>System administrators</Text>
+        <Text style={styles.summaryTitle}>Total Voters</Text>
+        <Text style={styles.summaryCount}>{constituencyVoters.length}</Text>
+        <Text style={styles.summarySubtitle}>In this constituency</Text>
       </View>
 
       <ScrollView 
@@ -90,15 +85,15 @@ const AllAdminsScreen = ({ onBack, onLogout }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {admins.length > 0 ? (
-          admins.map((admin, index) => (
-            <AdminCard key={admin.UserID || index} admin={admin} />
+        {constituencyVoters.length > 0 ? (
+          constituencyVoters.map((voter, index) => (
+            <VoterCard key={voter.VoterEPIC || index} voter={voter} />
           ))
         ) : (
           <View style={styles.emptyState}>
-            <AppIcon name="admin-panel-settings" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Admins Found</Text>
-            <Text style={styles.emptySubtitle}>No admin users are currently in the system.</Text>
+            <AppIcon name="how-to-vote" size={48} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>No Voters Found</Text>
+            <Text style={styles.emptySubtitle}>No voters found in this constituency.</Text>
           </View>
         )}
       </ScrollView>
@@ -114,21 +109,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-
+  headerCenter: {
+    flex: 1,
+    marginLeft: 16,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
   },
-  logoutButton: {
-    padding: 8,
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
@@ -150,7 +148,7 @@ const styles = StyleSheet.create({
   summaryCount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#8B5CF6',
+    color: '#3B82F6',
     marginBottom: 4,
   },
   summarySubtitle: {
@@ -161,7 +159,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  adminCard: {
+  voterCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
@@ -190,15 +188,13 @@ const styles = StyleSheet.create({
   userRole: {
     fontSize: 12,
     color: '#6B7280',
-    textTransform: 'capitalize',
   },
   statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
-
-  statusText: {
+  genderAge: {
     fontSize: 12,
+    color: '#6B7280',
     fontWeight: '500',
   },
   cardContent: {
@@ -229,7 +225,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 60,
   },
-
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -243,4 +238,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AllAdminsScreen;
+export default ConstituencyVotersScreen;

@@ -8,30 +8,32 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { loadDashboardData } from '../../store/slices/dashboardSlice';
+import { loadAdminDashboardData } from '../../store/slices/adminDashboardSlice';
 import { AppIcon, BackButton } from '../../components/common';
 
-const AllAdminsScreen = ({ onBack, onLogout }) => {
+const CreatedUsersScreen = ({ onBack, onLogout }) => {
   const dispatch = useDispatch();
-  const { admins } = useSelector(state => state.dashboard);
+  const { createdUsers, admins, boothBoys, stats } = useSelector(state => state.adminDashboard);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(loadDashboardData(true)).unwrap(); // Force refresh from network
+      await dispatch(loadAdminDashboardData(true)).unwrap();
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
     setRefreshing(false);
   };
 
-  const AdminCard = ({ admin }) => (
-    <View style={styles.adminCard}>
+  const UserCard = ({ user }) => (
+    <View style={styles.userCard}>
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{admin.FullName || admin.Username}</Text>
-          <Text style={styles.userRole}>{admin.Role}</Text>
+          <Text style={styles.userName}>{user.FullName || user.Username}</Text>
+          <Text style={[styles.userRole, {
+            color: user.Role === 'admin' ? '#8B5CF6' : '#3B82F6'
+          }]}>{user.Role}</Text>
         </View>
         <View style={styles.statusContainer}>
           <AppIcon name="circle" size={8} color="#10B981" />
@@ -42,27 +44,34 @@ const AllAdminsScreen = ({ onBack, onLogout }) => {
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Username:</Text>
-          <Text style={styles.infoValue}>{admin.Username}</Text>
+          <Text style={styles.infoValue}>{user.Username}</Text>
         </View>
         
-        {admin.Phone && (
+        {user.Phone && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Phone:</Text>
-            <Text style={styles.infoValue}>{admin.Phone}</Text>
+            <Text style={styles.infoValue}>{user.Phone}</Text>
           </View>
         )}
         
-        {admin.Email && (
+        {user.Email && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{admin.Email}</Text>
+            <Text style={styles.infoValue}>{user.Email}</Text>
           </View>
         )}
-        
-        {admin.assigned_scope && (
+
+        {user.AssignedBoothIDs && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Assigned Area:</Text>
-            <Text style={styles.infoValue}>{admin.assigned_scope}</Text>
+            <Text style={styles.infoLabel}>Assigned Booths:</Text>
+            <Text style={styles.infoValue}>{user.AssignedBoothIDs.replace(/[{}]/g, '')}</Text>
+          </View>
+        )}
+
+        {user.Created_by && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Created By:</Text>
+            <Text style={styles.infoValue}>{user.Created_by}</Text>
           </View>
         )}
       </View>
@@ -73,16 +82,25 @@ const AllAdminsScreen = ({ onBack, onLogout }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <BackButton onPress={onBack} />
-        <Text style={styles.headerTitle}>All Admins</Text>
+        <Text style={styles.headerTitle}>Created Users</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <AppIcon name="power-settings-new" size={20} color="#EF4444" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Total Admins</Text>
-        <Text style={styles.summaryCount}>{admins.length}</Text>
-        <Text style={styles.summarySubtitle}>System administrators</Text>
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{stats.totalCreatedUsers}</Text>
+          <Text style={styles.statLabel}>Total Users</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{stats.totalAdmins}</Text>
+          <Text style={styles.statLabel}>Admins</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{stats.totalBoothBoys}</Text>
+          <Text style={styles.statLabel}>Booth Boys</Text>
+        </View>
       </View>
 
       <ScrollView 
@@ -90,15 +108,15 @@ const AllAdminsScreen = ({ onBack, onLogout }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {admins.length > 0 ? (
-          admins.map((admin, index) => (
-            <AdminCard key={admin.UserID || index} admin={admin} />
+        {createdUsers.length > 0 ? (
+          createdUsers.map((user, index) => (
+            <UserCard key={user.UserID || index} user={user} />
           ))
         ) : (
           <View style={styles.emptyState}>
-            <AppIcon name="admin-panel-settings" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Admins Found</Text>
-            <Text style={styles.emptySubtitle}>No admin users are currently in the system.</Text>
+            <AppIcon name="group" size={48} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>No Users Found</Text>
+            <Text style={styles.emptySubtitle}>No users have been created yet.</Text>
           </View>
         )}
       </ScrollView>
@@ -121,7 +139,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -130,38 +147,35 @@ const styles = StyleSheet.create({
   logoutButton: {
     padding: 8,
   },
-  summaryCard: {
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  statCard: {
     backgroundColor: '#FFFFFF',
-    margin: 20,
-    padding: 20,
-    borderRadius: 12,
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    marginHorizontal: 4,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
-  summaryTitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  summaryCount: {
-    fontSize: 32,
+  statNumber: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#8B5CF6',
-    marginBottom: 4,
+    color: '#007bff',
   },
-  summarySubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   scrollContainer: {
     flex: 1,
     paddingHorizontal: 20,
   },
-  adminCard: {
+  userCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
@@ -189,17 +203,17 @@ const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 12,
-    color: '#6B7280',
+    fontWeight: '500',
     textTransform: 'capitalize',
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   statusText: {
     fontSize: 12,
     fontWeight: '500',
+    marginLeft: 4,
   },
   cardContent: {
     borderTopWidth: 1,
@@ -229,12 +243,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 60,
   },
-
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 8,
+    marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
@@ -243,4 +257,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AllAdminsScreen;
+export default CreatedUsersScreen;

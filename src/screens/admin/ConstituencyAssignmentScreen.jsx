@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,31 +10,32 @@ import {
   Alert,
   ScrollView,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { loadDashboardData } from '../../store/slices/dashboardSlice';
 import { AppIcon } from '../../components/common';
+import { userService } from '../../services/api/user.service';
 
 const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
   const dispatch = useDispatch();
   const dashboardState = useSelector(state => state.dashboard);
-  const { constituencies, admins, loading } = dashboardState;
+  const { constituencies, admins } = dashboardState;
+  const token = useSelector(state => state.auth.token);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedConstituency, setSelectedConstituency] = useState(null);
-  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [selectedAdmins, setSelectedAdmins] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [assignedConstituencies, setAssignedConstituencies] = useState({});
-
-  // Debug the entire dashboard state
-  console.log('Full dashboard state:', dashboardState);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(loadDashboardData()).unwrap();
+      await dispatch(loadDashboardData(true)).unwrap(); // Force refresh from network
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error refreshing data:', error);
     }
     setRefreshing(false);
   };
@@ -44,7 +45,6 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
   console.log('Constituencies length:', constituencies?.length);
   console.log('Admins data:', admins);
   console.log('Admins length:', admins?.length);
-  console.log('Loading state:', loading);
 
   // Transform constituencies data to match expected format
   const transformedConstituencies = (constituencies || []).map((constituency, index) => ({
@@ -65,31 +65,71 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
 
   const availableAdmins = admins || [];
 
-  const handleAssignAdmin = () => {
-    if (!selectedConstituency || !selectedAdmin) {
-      Alert.alert('Error', 'Please select both constituency and admin');
+  const handleAssignAdmin = async () => {
+    if (!selectedConstituency || selectedAdmins.length === 0) {
+      Alert.alert('Error', 'Please select constituency and at least one admin');
       return;
     }
 
-    const adminData = {
-      id: selectedAdmin.UserID,
-      name: selectedAdmin.FullName || selectedAdmin.Username,
-      email: selectedAdmin.Email || selectedAdmin.Username
-    };
+    setIsAssigning(true);
+    
+    try {
+      console.log('Redux token:', token);
+      console.log('Auth header will be:', token);
+      
+      const constituencyId = selectedConstituency.id.toString();
+      
+      // Call API for each selected admin
+      const assignmentPromises = selectedAdmins.map(async (admin) => {
+        // Get current assigned constituencies for this admin
+        const currentAssignments = admin.assigned_constituencies || '';
+        const assignmentArray = currentAssignments ? currentAssignments.split(',') : [];
+        
+        // Add new constituency if not already assigned
+        if (!assignmentArray.includes(constituencyId)) {
+          assignmentArray.push(constituencyId);
+        }
+        
+        const updatedAssignments = assignmentArray.join(',');
+        
+        console.log(`Calling PATCH /users/${admin.Username} with:`, {
+          assigned_constituencies: updatedAssignments
+        });
+        
+        return userService.updateUser(admin.Username, {
+          assigned_constituencies: updatedAssignments
+        });
+      });
 
-    setAssignedConstituencies(prev => ({
-      ...prev,
-      [selectedConstituency.id]: adminData
-    }));
+      const results = await Promise.all(assignmentPromises);
+      console.log('All API calls successful:', results.length);
 
-    setShowAssignModal(false);
-    setSelectedConstituency(null);
-    setSelectedAdmin(null);
+      // Update local state
+      const adminData = selectedAdmins.map(admin => ({
+        id: admin.UserID,
+        name: admin.FullName || admin.Username,
+        email: admin.Email || admin.Username
+      }));
 
-    Alert.alert(
-      'Success',
-      `${adminData.name} has been assigned to ${selectedConstituency.name}`
-    );
+      setAssignedConstituencies(prev => ({
+        ...prev,
+        [selectedConstituency.id]: adminData
+      }));
+
+      setShowAssignModal(false);
+      setSelectedConstituency(null);
+      setSelectedAdmins([]);
+
+      Alert.alert(
+        'Success',
+        `${selectedAdmins.length} admin(s) assigned to ${selectedConstituency.name}`
+      );
+    } catch (error) {
+      console.error('Assignment error:', error);
+      Alert.alert('Error', 'Failed to assign admins. Please try again.');
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   const handleUnassignAdmin = (constituency) => {
@@ -153,10 +193,21 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       {constituency.assignedAdmin ? (
         <View style={styles.adminSection}>
           <View style={styles.adminInfo}>
-            <AppIcon name="person" size={16} color="#3B82F6" />
+            <AppIcon name="group" size={16} color="#3B82F6" />
             <View style={styles.adminDetails}>
-              <Text style={styles.adminName}>{constituency.assignedAdmin.name}</Text>
-              <Text style={styles.adminEmail}>{constituency.assignedAdmin.email}</Text>
+              {Array.isArray(constituency.assignedAdmin) ? (
+                <>
+                  <Text style={styles.adminName}>{constituency.assignedAdmin.length} Admins Assigned</Text>
+                  <Text style={styles.adminEmail}>
+                    {constituency.assignedAdmin.map(admin => admin.name).join(', ')}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.adminName}>{constituency.assignedAdmin.name}</Text>
+                  <Text style={styles.adminEmail}>{constituency.assignedAdmin.email}</Text>
+                </>
+              )}
             </View>
           </View>
           <TouchableOpacity
@@ -175,7 +226,7 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
           }}
         >
           <AppIcon name="add" size={16} color="#FFFFFF" />
-          <Text style={styles.assignButtonText}>Assign Admin</Text>
+          <Text style={styles.assignButtonText}>Assign Admins</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -238,15 +289,11 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
       <View style={styles.debugContainer}>
         <Text style={styles.debugText}>Constituencies: {constituencies?.length || 0}</Text>
         <Text style={styles.debugText}>Admins: {admins?.length || 0}</Text>
-        <Text style={styles.debugText}>Loading: {loading ? 'Yes' : 'No'}</Text>
+        <Text style={styles.debugText}>Refreshing: {refreshing ? 'Yes' : 'No'}</Text>
       </View>
 
       {/* Constituencies List */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading constituencies...</Text>
-        </View>
-      ) : filteredConstituencies.length > 0 ? (
+      {filteredConstituencies.length > 0 ? (
         <FlatList
           data={filteredConstituencies}
           keyExtractor={(item) => item.id.toString()}
@@ -273,14 +320,20 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
         visible={showAssignModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowAssignModal(false)}
+        onRequestClose={() => {
+          setShowAssignModal(false);
+          setSelectedAdmins([]);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Assign Admin</Text>
               <TouchableOpacity
-                onPress={() => setShowAssignModal(false)}
+                onPress={() => {
+                  setShowAssignModal(false);
+                  setSelectedAdmins([]);
+                }}
                 style={styles.modalCloseButton}
               >
                 <AppIcon name="close" size={20} color="#6B7280" />
@@ -295,44 +348,66 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
               </View>
             )}
 
-            <Text style={styles.modalLabel}>Select Admin:</Text>
+            <Text style={styles.modalLabel}>Select Admins (Multiple Selection):</Text>
             <ScrollView style={styles.adminsList}>
-              {availableAdmins.map((admin) => (
-                <TouchableOpacity
-                  key={admin.UserID}
-                  style={[
-                    styles.adminOption,
-                    selectedAdmin?.UserID === admin.UserID && styles.selectedAdminOption
-                  ]}
-                  onPress={() => setSelectedAdmin(admin)}
-                >
-                  <View style={styles.adminOptionInfo}>
-                    <Text style={styles.adminOptionName}>{admin.FullName || admin.Username}</Text>
-                    <Text style={styles.adminOptionEmail}>{admin.Email || admin.Username}</Text>
-                  </View>
-                  {selectedAdmin?.UserID === admin.UserID && (
-                    <AppIcon name="check" size={16} color="#3B82F6" />
-                  )}
-                </TouchableOpacity>
-              ))}
+              {availableAdmins.map((admin) => {
+                const isSelected = selectedAdmins.some(selected => selected.UserID === admin.UserID);
+                return (
+                  <TouchableOpacity
+                    key={admin.UserID}
+                    style={[
+                      styles.adminOption,
+                      isSelected && styles.selectedAdminOption
+                    ]}
+                    onPress={() => {
+                      if (isSelected) {
+                        setSelectedAdmins(prev => prev.filter(selected => selected.UserID !== admin.UserID));
+                      } else {
+                        setSelectedAdmins(prev => [...prev, admin]);
+                      }
+                    }}
+                  >
+                    <View style={styles.adminOptionInfo}>
+                      <Text style={styles.adminOptionName}>{admin.FullName || admin.Username}</Text>
+                      <Text style={styles.adminOptionEmail}>{admin.Email || admin.Username}</Text>
+                    </View>
+                    {isSelected && (
+                      <AppIcon name="check" size={16} color="#3B82F6" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
+            
+            {selectedAdmins.length > 0 && (
+              <View style={styles.selectedCount}>
+                <Text style={styles.selectedCountText}>{selectedAdmins.length} admin(s) selected</Text>
+              </View>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setShowAssignModal(false)}
+                onPress={() => {
+                  setShowAssignModal(false);
+                  setSelectedAdmins([]);
+                }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.confirmButton,
-                  (!selectedAdmin || !selectedConstituency) && styles.disabledButton
+                  (selectedAdmins.length === 0 || !selectedConstituency || isAssigning) && styles.disabledButton
                 ]}
                 onPress={handleAssignAdmin}
-                disabled={!selectedAdmin || !selectedConstituency}
+                disabled={selectedAdmins.length === 0 || !selectedConstituency || isAssigning}
               >
-                <Text style={styles.confirmButtonText}>Assign</Text>
+                {isAssigning ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Assign ({selectedAdmins.length})</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -586,6 +661,18 @@ const styles = StyleSheet.create({
   adminOptionEmail: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  selectedCount: {
+    backgroundColor: '#EBF4FF',
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  selectedCountText: {
+    fontSize: 12,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
   modalActions: {
     flexDirection: 'row',

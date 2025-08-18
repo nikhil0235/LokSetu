@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authApi } from '../../services/api';
+import { USER_ROLES } from '../../services/api/config';
 
 // Async Thunks
 export const loginUser = createAsyncThunk(
@@ -11,11 +12,11 @@ export const loginUser = createAsyncThunk(
 
     // Role-based authorization check
     const allowedUsers = {
-      'super_admin': { role: 'super_admin', permissions: ['all'] },
-      'admin1': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
-      'admin2': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
-      'admin3': { role: 'admin', permissions: ['booth_management', 'data_collection'] },
-      'booth1': { role: 'booth_boy', permissions: ['voter_data_entry', 'booth_management'] }
+      'super_admin': { role: USER_ROLES.SUPER_ADMIN, permissions: ['all'] },
+      'admin1': { role: USER_ROLES.ADMIN, permissions: ['booth_management', 'data_collection'] },
+      'admin2': { role: USER_ROLES.ADMIN, permissions: ['booth_management', 'data_collection'] },
+      'admin3': { role: USER_ROLES.ADMIN, permissions: ['booth_management', 'data_collection'] },
+      'booth1': { role: USER_ROLES.BOOTH_BOY, permissions: ['voter_data_entry', 'booth_management'] }
     };
     
     if (!allowedUsers[username]) {
@@ -23,8 +24,7 @@ export const loginUser = createAsyncThunk(
     }
 
     try {
-      const { mockLogin } = await import('../../services/api/mockAuth');
-      const response = await mockLogin(username, password);
+      const response = await authApi.login({ username, password });
       return response;
     } catch (error) {
       return rejectWithValue(error.message);

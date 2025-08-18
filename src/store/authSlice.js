@@ -2,16 +2,24 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '../services/api/client';
 import { ENDPOINTS } from '../services/api/config';
 import { storage } from '../utils/storage';
+import { loadDashboardData } from './slices/dashboardSlice';
+import { cacheManager } from '../utils/cacheManager';
 
 // Async thunks
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue, dispatch }) => {
     try {
       console.log("credentials", credentials);
       console.log("ENDPOINTS.AUTH.LOGIN", ENDPOINTS.AUTH.LOGIN);
       const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials);
       console.log("response", response);
+      
+      // Load dashboard data only once after successful login
+      if (response.access_token) {
+        await dispatch(loadDashboardData());
+      }
+      
       return response;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -58,6 +66,7 @@ const authSlice = createSlice({
       state.token = null;
       state.error = null;
       storage.clearAuth();
+      cacheManager.clearAllCache();
     },
     setAuthData: (state, action) => {
       state.user = action.payload.user;
@@ -76,8 +85,24 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         
+        console.log('=== ADMIN LOGIN RESPONSE ===');
+        console.log('Full response:', JSON.stringify(action.payload, null, 2));
+        console.log('User role:', action.payload.role);
+        console.log('User ID:', action.payload.user_id);
+        console.log('Username:', action.payload.username);
+        console.log('Fullname:', action.payload.fullname);
+        console.log('Email:', action.payload.email);
+        console.log('Phone:', action.payload.phone);
+        console.log('Created by:', action.payload.created_by);
+        console.log('============================');
+        
         const { access_token, token_type, selectedRole, created_users, ...userData } = action.payload;
-        const bearerToken = `Bearer ${access_token}`;
+        const bearerToken = access_token; // Don't add Bearer prefix, base.jsx will add it
+        
+        // Clear cache for new user login
+        if (userData.user_id) {
+          cacheManager.clearUserCache(userData.user_id);
+        }
         
         // Separate users by role based on user role
         let admins = [];
@@ -95,6 +120,8 @@ const authSlice = createSlice({
           all_admins: admins,
           all_booth_boys: boothBoys
         };
+        
+        console.log('Final user data stored:', JSON.stringify(finalUserData, null, 2));
         
         state.user = finalUserData;
         state.token = bearerToken;

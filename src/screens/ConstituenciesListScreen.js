@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 import ConstituencyCard from '../components/ConstituencyCard';
 import { AppIcon, BackButton } from '../components/common';
 
-const ConstituenciesListScreen = ({ onBack }) => {
+const ConstituenciesListScreen = ({ onBack, onNavigate }) => {
   const { constituencies, loading } = useSelector(state => state.dashboard);
   const [filteredConstituencies, setFilteredConstituencies] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,8 +43,16 @@ const ConstituenciesListScreen = ({ onBack }) => {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
+  const handleConstituencyPress = (constituency) => {
+    console.log('Selected constituency:', constituency);
+    onNavigate && onNavigate('constituencyVoters', {
+      assemblyNo: constituency.asmblyNo,
+      constituencyName: constituency.asmblyName
+    });
+  };
+
   const renderConstituencyItem = ({ item }) => (
-    <ConstituencyCard constituency={item} />
+    <ConstituencyCard constituency={item} onPress={handleConstituencyPress} />
   );
 
   if (loading && !refreshing) {

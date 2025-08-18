@@ -4,6 +4,7 @@ import { Linking } from 'react-native';
 import { store } from './src/store';
 import { logout, setAuthData } from './src/store/authSlice';
 import { storage } from './src/utils/storage';
+import { loadCachedDashboardData } from './src/store/slices/dashboardSlice';
 import { parseResetToken, isResetPasswordLink } from './src/utils/deepLinking';
 import LokSetuLogin from './src/LokSetuLogin';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
@@ -17,6 +18,8 @@ import BoothAssignmentScreen from './src/screens/admin/BoothAssignmentScreen';
 import CreatedBoothBoysScreen from './src/screens/admin/CreatedBoothBoysScreen';
 import AllAdminsScreen from './src/screens/admin/AllAdminsScreen';
 import AllBoothBoysScreen from './src/screens/admin/AllBoothBoysScreen';
+import AllVotersScreen from './src/screens/admin/AllVotersScreen';
+import ConstituencyVotersScreen from './src/screens/admin/ConstituencyVotersScreen';
 import BoothListScreen from './src/screens/admin/BoothListScreen';
 import BoothSelectionScreen from './src/screens/admin/BoothSelectionScreen';
 import ConstituenciesListScreen from './src/screens/ConstituenciesListScreen';
@@ -29,6 +32,7 @@ const AppContent = () => {
   const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const [screenParams, setScreenParams] = useState(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [resetToken, setResetToken] = useState(null);
@@ -40,6 +44,8 @@ const AppContent = () => {
 
       if (storedToken && storedUser) {
         dispatch(setAuthData({ token: storedToken, user: storedUser }));
+        // Load dashboard data from storage
+        dispatch(loadCachedDashboardData());
       }
     };
     
@@ -76,8 +82,9 @@ const AppContent = () => {
     setCurrentScreen('dashboard');
   };
 
-  const handleNavigation = (screen) => {
+  const handleNavigation = (screen, params = null) => {
     setCurrentScreen(screen);
+    setScreenParams(params);
     setShowDrawer(false);
   };
 
@@ -103,7 +110,8 @@ const AppContent = () => {
           return <CreateAdminScreen {...screenProps} />;
         case 'assignConstituency':
           return <ConstituencyAssignmentScreen {...screenProps} />;
-
+        case 'dataScraper':
+          return <ScrapperScreen {...screenProps} />;
         case 'systemReports':
           return <ReportScreen {...screenProps} />;
         case 'createBoothBoy':
@@ -118,12 +126,16 @@ const AppContent = () => {
           return <AllAdminsScreen {...screenProps} />;
         case 'allBoothBoys':
           return <AllBoothBoysScreen {...screenProps} />;
+        case 'allVoters':
+          return <AllVotersScreen {...screenProps} />;
         case 'boothList':
           return <BoothListScreen {...screenProps} />;
         case 'boothSelection':
           return <BoothSelectionScreen {...screenProps} />;
         case 'constituenciesList':
-          return <ConstituenciesListScreen {...screenProps} />;
+          return <ConstituenciesListScreen {...screenProps} onNavigate={handleNavigation} />;
+        case 'constituencyVoters':
+          return <ConstituencyVotersScreen {...screenProps} {...screenParams} />;
         default:
           return null;
       }

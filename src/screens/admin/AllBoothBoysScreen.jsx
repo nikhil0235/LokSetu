@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,26 +12,18 @@ import { loadDashboardData } from '../../store/slices/dashboardSlice';
 
 const AllBoothBoysScreen = ({ onBack, onLogout }) => {
   const dispatch = useDispatch();
-  const { boothBoys, loading } = useSelector(state => state.dashboard);
+  const { boothBoys } = useSelector(state => state.dashboard);
   const [refreshing, setRefreshing] = useState(false);
-
-  const loadBoothBoys = async () => {
-    try {
-      await dispatch(loadDashboardData()).unwrap();
-    } catch (error) {
-      console.error('Error loading booth boys:', error);
-    }
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadBoothBoys();
+    try {
+      await dispatch(loadDashboardData(true)).unwrap(); // Force refresh from network
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
     setRefreshing(false);
   };
-
-  useEffect(() => {
-    loadBoothBoys();
-  }, []);
 
   const BoothBoyCard = ({ boothBoy }) => (
     <View style={styles.boothBoyCard}>

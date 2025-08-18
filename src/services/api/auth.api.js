@@ -1,4 +1,4 @@
-import { apiClient } from './base';
+import { apiClient } from './client';
 
 export const authApi = {
   login: async (credentials) => {
@@ -6,11 +6,11 @@ export const authApi = {
   },
   
   logout: async () => {
-    return apiClient.post('/auth/logout');
+    return { data: null }; // Mock for now
   },
   
   refreshToken: async () => {
-    return apiClient.post('/auth/refresh');
+    return { data: null }; // Mock for now
   },
 
   forgotPassword: async (username) => {

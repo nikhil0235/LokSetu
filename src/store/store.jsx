@@ -11,6 +11,7 @@ import appConfigSlice from './slices/appConfigSlice';
 import syncSlice from './slices/syncSlice';
 import constituenciesSlice from './slices/constituenciesSlice';
 import dashboardSlice from './slices/dashboardSlice';
+import adminDashboardSlice from './slices/adminDashboardSlice';
 import {
   loggerMiddleware,
   errorMiddleware,
@@ -33,6 +34,7 @@ export const store = configureStore({
     sync: syncSlice,
     constituencies: constituenciesSlice,
     dashboard: dashboardSlice,
+    adminDashboard: adminDashboardSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
