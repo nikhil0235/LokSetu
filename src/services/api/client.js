@@ -1,4 +1,5 @@
 import { API_CONFIG } from './config';
+import { ApiError } from './errors';
 
 class ApiClient {
   constructor() {
@@ -13,204 +14,115 @@ class ApiClient {
     };
   }
 
-  async request(endpoint, options = {}, token = null) {
-    const url = `${this.baseURL}${endpoint}`;
-    const config = {
-      timeout: this.timeout,
-      headers: options.headers || this.getAuthHeaders(token),
-      ...options
-    };
-
-    console.log('API Request:', url, config);
-    const response = await fetch(url, config);
-    
+  async handleResponse(response, url) {
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('API Error Response:', response.status, errorText);
-      
-      let error;
-      try {
-        error = JSON.parse(errorText);
-      } catch {
-        error = { message: errorText || 'Request failed' };
-      }
-      
-      throw new Error(error.message || error.detail || `HTTP ${response.status}`);
-    }
-    
-    return response.json();
-  }
-  
-get(endpoint, token, params = null) {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
-  };
-
-  if (params) {
-    const query = new URLSearchParams(params).toString();
-    const urlWithParams = `${this.baseURL}${endpoint}?${query}`;
-    
-    console.log('API Request:', urlWithParams, { method: 'GET', headers });
-    
-    return fetch(urlWithParams, {
-      method: 'GET',
-      headers
-    }).then(response => {
-      if (!response.ok) {
-        return response.text().then(errorText => {
-          console.error('API Error Response:', response.status, errorText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        });
-      }
-      return response.json();
-    });
-  }
-
-  // Default GET without params
-  console.log('API GET Request:', endpoint, 'Headers:', headers);
-  return fetch(`${this.baseURL}${endpoint}`, {
-    method: 'GET',
-    headers
-  }).then(response => {
-    if (!response.ok) {
-      return response.text().then(errorText => {
-        console.error('API Error Response:', response.status, errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      console.log('❌ API ERROR:', {
+        status: response.status,
+        url,
+        error: errorText
       });
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || 'Request failed' };
+      }
+      
+      const message = errorData.message || errorData.detail || `HTTP ${response.status}`;
+      throw new ApiError(message, response.status, errorData);
     }
-    return response.json();
-  });
-}
+    
+    const responseData = await response.json();
+    console.log('✅ API SUCCESS:', {
+      status: response.status,
+      url,
+      data: responseData
+    });
+    
+    return responseData;
+  }
+
+  get(endpoint, token, params = null) {
+    const headers = this.getAuthHeaders(token);
+    const url = params ? 
+      `${this.baseURL}${endpoint}?${new URLSearchParams(params).toString()}` : 
+      `${this.baseURL}${endpoint}`;
+      
+    console.log('🚀 GET REQUEST:', { url, headers, params });
+    
+    return fetch(url, { method: 'GET', headers })
+      .then(response => this.handleResponse(response, url));
+  }
 
 
   post(endpoint, data, token) {
-    // Special handling for login endpoint
-    if (endpoint === '/auth/login') {
-      const formData = new URLSearchParams();
-      formData.append('username', data.username);
-      formData.append('password', data.password);
+    const url = `${this.baseURL}${endpoint}`;
+    let headers, body;
+
+    // Handle form data for specific endpoints that require it
+    if (endpoint === '/auth/login' || (endpoint === '/users/' && data.username)) {
+      headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
+      };
       
-      const url = `${this.baseURL}${endpoint}`;
-      console.log('API Login Request:', url);
-      console.log('Form Data:', formData.toString());
-      console.log('Username:', data.username, 'Password:', data.password);
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData.toString()
-      }).catch(error => {
-        console.log('Network Error:', error);
-        throw new Error('Network connection failed');
-      }).then(response => {
-        console.log('Response received:', response.status);
-        if (!response.ok) {
-          return response.text().then(errorText => {
-            console.log('API Error Response:', response.status, errorText);
-            let error;
-            try {
-              error = JSON.parse(errorText);
-            } catch {
-              error = { message: errorText || 'Request failed' };
-            }
-            throw new Error(error.message || error.detail || `HTTP ${response.status}`);
-          });
+      const formData = new URLSearchParams();
+      Object.keys(data).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          if (Array.isArray(data[key])) {
+            formData.append(key, data[key].join(','));
+          } else {
+            formData.append(key, data[key]);
+          }
         }
-        return response.json().then(result => {
-          // Add selectedRole to the response if provided
-          if (data.selectedRole) {
-            result.selectedRole = data.selectedRole;
-          }
-          return result;
-        });
       });
-    }
-  
-    // Special handling for user creation endpoint
-    if (endpoint === '/users/' && data.username) {
-      const formData = new URLSearchParams();
-      formData.append('username', data.username);
-      formData.append('password', data.password);
-      formData.append('role', data.role);
-      formData.append('full_name', data.full_name || '');
-      formData.append('email', data.email || '');
-      formData.append('phone', data.phone || '');
       
-      // Handle assigned_booths as comma-separated string
-      if (data.assigned_booths && Array.isArray(data.assigned_booths)) {
-        formData.append('assigned_booths', data.assigned_booths.join(','));
-      } else {
-        formData.append('assigned_booths', data.assigned_booths || '');
-      }
-      
-      const url = `${this.baseURL}${endpoint}`;
-      console.log('🔥 USER CREATION REQUEST:');
-      console.log('URL:', url);
-      console.log('Form Data:', formData.toString());
-      console.log('Token:', token);
-      
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...(token && { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` })
-        },
-        body: formData.toString()
-      }).then(response => {
-        console.log('🔥 USER CREATION RESPONSE:');
-        console.log('Status:', response.status);
-        console.log('Status Text:', response.statusText);
-        console.log('Headers:', response.headers);
-        
-        return response.text().then(responseText => {
-          console.log('🔥 RESPONSE BODY:', responseText);
-          if (!response.ok) {
-            let error;
-            try {
-              error = JSON.parse(responseText);
-            } catch {
-              error = { message: responseText || 'Request failed' };
-            }
-            throw new Error(error.message || error.detail || `HTTP ${response.status}`);
-          }
-          
-          let result;
-          try {
-            result = JSON.parse(responseText);
-          } catch {
-            result = { message: responseText };
-          }
-          
-          // Check for duplicate user message
-          if (result.detail === 'Username already exists') {
-            throw new Error('Username already exists');
-          }
-          
-          return result;
-        });
-      });
+      body = formData.toString();
+    } else {
+      headers = this.getAuthHeaders(token);
+      body = JSON.stringify(data);
     }
     
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }, token);
+    console.log('🚀 POST REQUEST:', { url, headers, data });
+    
+    return fetch(url, { method: 'POST', headers, body })
+      .then(response => {
+        if (endpoint === '/auth/login' && data.selectedRole) {
+          return this.handleResponse(response, url).then(result => ({
+            ...result,
+            selectedRole: data.selectedRole
+          }));
+        }
+        return this.handleResponse(response, url);
+      })
+      .catch(error => {
+        console.log('Network Error:', error);
+        throw new Error('Network connection failed');
+      });
   }
 
   patch(endpoint, data, token) {
-    return this.request(endpoint, {
-      method: 'PATCH',
-      body: JSON.stringify(data)
-    }, token);
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = this.getAuthHeaders(token);
+    const body = JSON.stringify(data);
+    
+    console.log('🚀 PATCH REQUEST:', { url, headers, data });
+    
+    return fetch(url, { method: 'PATCH', headers, body })
+      .then(response => this.handleResponse(response, url));
   }
 
   delete(endpoint, data, token) {
-    return this.request(endpoint, {
-      method: 'DELETE',
-      body: JSON.stringify(data)
-    }, token);
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = this.getAuthHeaders(token);
+    const body = data ? JSON.stringify(data) : undefined;
+    
+    console.log('🚀 DELETE REQUEST:', { url, headers, data });
+    
+    return fetch(url, { method: 'DELETE', headers, body })
+      .then(response => this.handleResponse(response, url));
   }
 }
 

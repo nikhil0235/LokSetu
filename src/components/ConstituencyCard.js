@@ -7,26 +7,26 @@ const ConstituencyCard = ({ constituency, onPress }) => {
     <TouchableOpacity style={styles.card} onPress={() => onPress && onPress(constituency)}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.name}>{constituency.asmblyName}</Text>
-          <Text style={styles.nameL1}>{constituency.asmblyNameL1}</Text>
+          <Text style={styles.name}>{constituency?.asmblyName || 'N/A'}</Text>
+          <Text style={styles.nameL1}>{constituency?.asmblyNameL1 || 'N/A'}</Text>
         </View>
         <View style={styles.numberContainer}>
-          <Text style={styles.number}>{constituency.asmblyNo}</Text>
+          <Text style={styles.number}>{constituency?.asmblyNo || 'N/A'}</Text>
         </View>
       </View>
       
       <View style={styles.details}>
         <View style={styles.detailRow}>
           <AppIcon name="location-on" size={16} color="#666" />
-          <Text style={styles.detailText}>State: {constituency.stateCd}</Text>
+          <Text style={styles.detailText}>State: {constituency?.stateCd || 'N/A'}</Text>
         </View>
         <View style={styles.detailRow}>
           <AppIcon name="business" size={16} color="#666" />
-          <Text style={styles.detailText}>District: {constituency.districtCd}</Text>
+          <Text style={styles.detailText}>District: {constituency?.districtCd || 'N/A'}</Text>
         </View>
         <View style={styles.detailRow}>
           <AppIcon name="fingerprint" size={16} color="#666" />
-          <Text style={styles.detailText}>AC ID: {constituency.acId}</Text>
+          <Text style={styles.detailText}>AC ID: {constituency?.acId || 'N/A'}</Text>
         </View>
       </View>
       

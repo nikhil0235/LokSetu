@@ -1,97 +1,160 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Booth Pulse 🗳️
 
-# Getting Started
+A comprehensive political data management platform for real-time electoral operations, voter database updates, and field team coordination built with [**React Native**](https://reactnative.dev).
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📱 About the App
 
-## Step 1: Start Metro
+Booth Pulse is designed for political campaigns to manage voter data, coordinate field teams, and track electoral performance through a hierarchical access system. Each user type has customized dashboards and role-based permissions.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 👥 User Hierarchy & Access Levels
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### 1. App Owner / Production Team (Super Admin)
+- **Access**: Full application control
+- **Abilities**: View/edit all data, user management, analytics, system monitoring
+- **Dashboard**: Super Admin Console
 
-```sh
-# Using npm
+### 2. Political Party Access
+- **Access**: Entire state or selected constituencies
+- **Abilities**: Manage regional units, assign users, set targets
+- **Dashboard**: Party Admin Dashboard
+
+### 3. Candidate Access
+- **Access**: Own constituency (read-only)
+- **Abilities**: View constituency data, real-time reports, survey analysis
+- **Dashboard**: Candidate Command Center
+
+### 4. Vidhan Sabha Prabhari
+- **Access**: Full constituency oversight
+- **Abilities**: Manage block/panchayat prabharis, coordinate operations
+- **Dashboard**: Constituency Operations Dashboard
+
+### 5. Block Prabhari / Nagar Prabhari
+- **Access**: Block or urban body (Nagar Nigam/Parishad/Panchayat)
+- **Abilities**: Manage panchayats/wards, assign volunteers
+- **Dashboard**: Block/Nagar Management Dashboard
+
+### 6. Panchayat Prabhari / Ward Prabhari
+- **Access**: Single panchayat or ward
+- **Abilities**: Track booths, manage polling agents
+- **Dashboard**: Panchayat/Ward Focus Panel
+
+### 7. Booth Volunteers & Polling Agents
+- **Access**: Assigned booth(s) only
+- **Abilities**: Update voter records, submit survey data
+- **Dashboard**: Mobile Task Dashboard
+
+## 📊 Voter Data Structure
+
+### Basic Information
+- EPIC/Voter ID, Name, Guardian Name, Gender, Age/DOB
+- Mobile Number, Photo, Booth Details
+
+### Political Data
+- Last Election Voted Party
+- Current Voting Preference
+- Vote Certainty & Availability
+
+### Demographics
+- Religion, Caste, Category (General/OBC/EBC)
+- Language Preference
+
+### Socio-Economic
+- Education Level
+- Employment Status (Govt/Private/Self-employed/Unemployed)
+- Salary Range, Job Role
+
+### Location & Issues
+- Residence Status, Migration Details
+- Key Issues & Feedback
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have completed the [React Native Environment Setup](https://reactnative.dev/docs/set-up-your-environment).
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd LokSetu
+
+# Install dependencies
+npm install
+# OR
+yarn install
+
+# For iOS (macOS only)
+cd ios && pod install && cd ..
+```
+
+### Running the App
+
+```bash
+# Start Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# Run on Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Run on iOS
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 🏗️ Project Structure
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```
+src/
+├── components/
+│   ├── common/          # Reusable components
+│   └── specific/        # Role-specific components
+├── screens/
+│   ├── boothboy/        # Booth volunteer screens
+│   ├── panchayat/       # Panchayat prabhari screens
+│   ├── block/           # Block prabhari screens
+│   └── candidate/       # Candidate screens
+├── config/
+│   └── userRoleConfig.js # Role-based configurations
+├── utils/               # Helper functions
+└── navigation/          # Navigation setup
+```
 
-## Step 3: Modify your app
+## 🔧 Key Features
 
-Now that you have successfully run the app, let's make changes!
+- **Hierarchical Data Access**: Role-based data visibility and editing permissions
+- **Real-time Voter Management**: Update voter information, preferences, and contact details
+- **Performance Analytics**: Track team performance and data completion rates
+- **Drill-down Navigation**: Higher-level users can view subordinate dashboards
+- **Offline Support**: Work offline and sync when connected
+- **Multi-language Support**: Hindi and English interface
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 📱 Screen Components
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### VoterListScreen
+Main screen for booth volunteers to manage voter data with:
+- Voter cards with political preferences
+- Verification status indicators
+- Filter and search capabilities
+- Edit and call functionality
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## 🛠️ Development
 
-## Congratulations! :tada:
+### Code Quality
+The project uses:
+- ESLint for code linting
+- Prettier for code formatting
+- React Native best practices
 
-You've successfully run and modified your React Native App. :partying_face:
+### Security Considerations
+- Secure credential management
+- Input sanitization
+- Role-based access control
+- Data encryption for sensitive information
 
-### Now what?
+## 📄 License
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+This project is proprietary software for electoral campaign management.
 
-# Troubleshooting
+## 🤝 Contributing
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+This is a private project. Contact the development team for contribution guidelines.

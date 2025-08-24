@@ -26,10 +26,10 @@ const ConstituenciesListScreen = ({ onBack, onNavigate }) => {
   useEffect(() => {
     if (searchQuery) {
       const filtered = constituencies.filter(constituency => 
-        constituency.asmblyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        constituency.asmblyNameL1.includes(searchQuery) ||
-        constituency.asmblyNo.toString().includes(searchQuery) ||
-        constituency.districtCd.toLowerCase().includes(searchQuery.toLowerCase())
+        constituency?.asmblyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        constituency?.asmblyNameL1?.includes(searchQuery) ||
+        constituency?.asmblyNo?.toString().includes(searchQuery) ||
+        constituency?.districtCd?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredConstituencies(filtered);
     } else {
@@ -87,7 +87,7 @@ const ConstituenciesListScreen = ({ onBack, onNavigate }) => {
       <FlatList
         data={filteredConstituencies}
         renderItem={renderConstituencyItem}
-        keyExtractor={(item) => item.acId.toString()}
+        keyExtractor={(item) => item?.acId?.toString() || Math.random().toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={

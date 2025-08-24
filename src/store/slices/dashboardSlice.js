@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '../../services/api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createUser } from '../userSlice';
+import { storage } from '../../utils/storage';
 
 const DASHBOARD_STORAGE_KEY = '@dashboard_data';
 
@@ -21,24 +22,53 @@ export const loadDashboardData = createAsyncThunk(
 
       console.log('Loading dashboard data from network');
       const { auth } = getState();
-      const { token, user } = auth;
+      let { token, user } = auth;
+      
+      // If token is not in state, try to get it from storage
+      if (!token) {
+        token = await storage.getToken();
+      }
       
       const stateId = user?.state_id || 'S04';
       const districtId = user?.district_id || 'S0429';
       const assemblyId = user?.assembly_id || '195';
 
-      const [usersResponse, votersResponse, boothsResponse, constituenciesResponse] = await Promise.all([
-        apiClient.get('/users', token),
-        apiClient.get('/voters', token),
-        apiClient.get('/general/booths', token, {
-          state_id: stateId,
-          district_id: districtId,
-          assembly_id: assemblyId
-        }),
-        apiClient.get('/general/assembly', token, {
-          state_id: stateId,
-        })
-      ]);
+      // For admin users, call admin-specific endpoints
+      let usersResponse, votersResponse, boothsResponse, constituenciesResponse;
+      
+      if (user?.role === 'super_admin' || user?.role === 'admin') {
+        console.log('Loading admin-specific data...');
+        const [adminUsers, adminVoters, adminBooths, adminConstituencies] = await Promise.all([
+          apiClient.get('/users/', token),
+          apiClient.get('/voters/', token),
+          apiClient.get('/users/assigned-booths', token),
+          apiClient.get('/users/assigned-constituencies', token)
+        ]);
+        
+        usersResponse = adminUsers;
+        votersResponse = adminVoters;
+        boothsResponse = adminBooths;
+        constituenciesResponse = adminConstituencies;
+      } else {
+        console.log('Loading general data...');
+        const [generalUsers, generalVoters, generalBooths, generalConstituencies] = await Promise.all([
+          apiClient.get('/users', token),
+          apiClient.get('/voters', token),
+          apiClient.get('/general/booths', token, {
+            state_id: stateId,
+            district_id: districtId,
+            assembly_id: assemblyId
+          }),
+          apiClient.get('/general/assembly', token, {
+            state_id: stateId,
+          })
+        ]);
+        
+        usersResponse = generalUsers;
+        votersResponse = generalVoters;
+        boothsResponse = generalBooths;
+        constituenciesResponse = generalConstituencies;
+      }
 
       const dashboardData = {
         users: usersResponse || [],
@@ -171,12 +201,13 @@ const dashboardSlice = createSlice({
       })
       .addCase(loadDashboardData.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload.users;
-        state.voters = action.payload.voters;
-        state.booths = action.payload.booths;
-        state.constituencies = action.payload.constituencies;
+        state.users = action.payload.users || [];
+        state.voters = action.payload.voters || [];
+        state.booths = action.payload.booths || [];
+        state.constituencies = action.payload.constituencies || [];
         state.lastUpdated = action.payload.lastUpdated;
         console.log('Dashboard data loaded:');
+        console.log('Raw constituencies data:', action.payload.constituencies);
         console.log('Booths count:', state.booths?.length);
         console.log('Constituencies count:', state.constituencies?.length);
         dashboardSlice.caseReducers.updateStats(state);

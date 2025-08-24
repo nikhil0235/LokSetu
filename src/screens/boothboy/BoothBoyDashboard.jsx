@@ -1,53 +1,173 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Alert,
 } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { 
+  DashboardHeader,
+  StatsRow,
+  QuickActions,
+  HorizontalScrollCards, 
+  DemographicsCard, 
+  ElectionResultsCard,
+  AppIcon,
+  VoterEditModal
+} from '../../components/common';
 import VoterListScreen from './VoterListScreen';
+import VoterDataForm from './VoterDataForm';
 import FilterModal from './components/FilterModal';
-import BoothBoyProfile from './components/BoothBoyProfile';
-import { AppIcon } from '../../components/common';
 
-const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
+import { logout } from '../../store/authSlice';
+
+
+const BoothBoyDashboard = ({ boothBoyInfo, onMenuPress }) => {
+  const dispatch = useDispatch();
   const [showVoterList, setShowVoterList] = useState(false);
+  const [showVoterDataForm, setShowVoterDataForm] = useState(false);
+  const [showVoterEditModal, setShowVoterEditModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
+  const [selectedVoterForEdit, setSelectedVoterForEdit] = useState(null);
   const [voterStats, setVoterStats] = useState({
     total: 2847,
-    verified: 1923,
-    unverified: 924,
+    completed: 1923,
+    pending: 924,
     male: 1456,
     female: 1341,
-    thirdGender: 50,
+    others: 50,
   });
 
-  const defaultBoothBoyInfo = {
+  // Mock data for new dashboard sections
+  const partyWiseData = [
+    { name: 'BJP', count: 1205, percentage: 42.3, color: '#FF6B35' },
+    { name: 'RJD', count: 968, percentage: 34.0, color: '#00A86B' },
+    { name: 'JDU', count: 412, percentage: 14.5, color: '#4169E1' },
+    { name: 'Congress', count: 156, percentage: 5.5, color: '#19CDFF' },
+    { name: 'Others', count: 106, percentage: 3.7, color: '#9CA3AF' },
+  ];
+
+  const demographicsData = {
+    gender: { male: voterStats.male, female: voterStats.female, others: voterStats.others },
+    age: { '18-35': 1227, '36-55': 1170, '56+': 450 },
+    caste: { General: 1205, OBC: 968, SC: 412, ST: 156, Others: 106 }
+  };
+
+  const votingFamilies = [
+    { familyName: 'Kumar Family', members: 8, voters: 6, influence: 'High' },
+    { familyName: 'Singh Family', members: 12, voters: 9, influence: 'Very High' },
+    { familyName: 'Sharma Family', members: 6, voters: 4, influence: 'Medium' },
+    { familyName: 'Yadav Family', members: 10, voters: 7, influence: 'High' },
+    { familyName: 'Prasad Family', members: 5, voters: 3, influence: 'Medium' },
+  ];
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+
+  const handlePartyCardPress = (party) => {
+    if (party.parties) {
+      // Alliance clicked - pass all parties in alliance
+      setActiveFilters({ type: 'alliance', value: party.name, parties: party.parties });
+    } else {
+      // Individual party clicked
+      setActiveFilters({ type: 'party', value: party.name });
+    }
+    setShowVoterList(true);
+  };
+
+  const handleFamilyCardPress = (family) => {
+    setActiveFilters({ type: 'family', value: family.familyName });
+    setShowVoterList(true);
+  };
+
+  const handleDemographicPress = (type, value) => {
+    setActiveFilters({ type: type, value: value });
+    setShowVoterList(true);
+  };
+
+  const [performanceData, setPerformanceData] = useState({
+    todayUpdates: 47,
+    weeklyUpdates: 320,
+    dataCompleteness: 89,
+    lastSyncTime: new Date(),
+    boothCoverage: 95,
+    voterContactRate: 78,
+    issuesReported: 3,
+    pendingVerifications: 24
+  });
+
+  const boothBoyData = useMemo(() => ({
     id: 'BB001',
     name: 'राम कुमार',
-    phone: '+91 9876543210',
-    assignedBooths: ['B001', 'B002', 'B003'],
+    phone: '<phone_number>',
+    assignedBooths: ['B001'],
     constituency: 'Constituency-1',
     area: 'North Zone',
     totalVoters: 2847,
+    role: 'booth_volunteer',
     ...boothBoyInfo
-  };
+  }), [boothBoyInfo]);
 
-  const filterOptions = [
-    { id: 'booth', title: 'Booth Wise', iconName: 'location-on', color: '#3B82F6' },
-    { id: 'address', title: 'Address Wise', iconName: 'home', color: '#10B981' },
-    { id: 'age', title: 'Age Wise', iconName: 'cake', color: '#F59E0B' },
-    { id: 'caste', title: 'Caste Wise', iconName: 'group', color: '#8B5CF6' },
-    { id: 'verification', title: 'Verification Status', iconName: 'verified', color: '#EF4444' },
-    { id: 'gender', title: 'Gender Wise', iconName: 'person', color: '#EC4899' }
-  ];
 
-  const handleFilterSelect = (filterId) => {
-    setActiveFilters({ type: filterId });
-    setShowFilterModal(true);
-  };
+
+  // Top row stats: Total, Completed, Pending
+  const topRowStats = useMemo(() => [
+    {
+      title: 'Total Voters',
+      value: voterStats.total,
+      icon: 'group',
+      color: '#3B82F6',
+      onPress: () => {
+        setActiveFilters({ type: 'all', value: 'all' });
+        setShowVoterList(true);
+      }
+    },
+    {
+      title: 'Completed',
+      value: voterStats.completed,
+      icon: 'check-circle',
+      color: '#10B981',
+      onPress: () => {
+        setActiveFilters({ type: 'status', value: 'completed' });
+        setShowVoterList(true);
+      }
+    },
+    {
+      title: 'Pending',
+      value: voterStats.pending,
+      icon: 'schedule',
+      color: '#F59E0B',
+      onPress: () => {
+        setActiveFilters({ type: 'status', value: 'pending' });
+        setShowVoterList(true);
+      }
+    }
+  ], [voterStats]);
+
+  // Quick actions
+  const quickActions = useMemo(() => [
+    {
+      title: 'Collect Data',
+      icon: 'add-circle',
+      color: '#10B981',
+      onPress: () => handleNavigation('voterDataForm')
+    },
+    {
+      title: 'Sync Data',
+      icon: 'sync',
+      color: '#3B82F6',
+      onPress: () => {
+        setPerformanceData(prev => ({ ...prev, lastSyncTime: new Date() }));
+        Alert.alert('Sync Complete', 'Data synchronized successfully!');
+      }
+    }
+  ], []);
+
+
 
   const applyFilters = (filters) => {
     setActiveFilters(filters);
@@ -55,83 +175,128 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
     setShowVoterList(true);
   };
 
-  if (showVoterList) {
+  const handleNavigation = (screen, params = null) => {
+    switch (screen) {
+      case 'voterList':
+        setActiveFilters({});
+        setShowVoterList(true);
+        break;
+      case 'voterDataForm':
+        setSelectedVoterForEdit(null);
+        setShowVoterDataForm(true);
+        break;
+      case 'profile':
+        Alert.alert('Profile', 'Profile screen not implemented yet');
+        break;
+      case 'syncData':
+        Alert.alert('Sync', 'Data sync not implemented yet');
+        break;
+      default:
+        console.log('Unknown navigation:', screen);
+    }
+  };
+
+  const handleEditVoter = (voter) => {
+    setSelectedVoterForEdit(voter);
+    setShowVoterEditModal(true);
+  };
+
+  const handleSaveVoterData = (voterData) => {
+    // Here you would typically call the API to save voter data
+    console.log('Voter data saved:', voterData);
+    setShowVoterEditModal(false);
+    setSelectedVoterForEdit(null);
+    // Update voter stats or refresh data as needed
+  };
+
+
+
+  if (showVoterDataForm) {
     return (
-      <VoterListScreen
-        filters={activeFilters}
-        boothBoyInfo={defaultBoothBoyInfo}
-        onBack={() => setShowVoterList(false)}
-        onLogout={onLogout}
-        onMenuPress={onMenuPress}
+      <VoterDataForm
+        epicId={selectedVoterForEdit?.epic_id}
+        initialData={selectedVoterForEdit}
+        onBack={() => {
+          setShowVoterDataForm(false);
+          setSelectedVoterForEdit(null);
+        }}
+        onSave={handleSaveVoterData}
       />
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-            <AppIcon name="menu" size={28} color="#374151" />
-          </TouchableOpacity>
-          <View style={styles.profilePic}>
-            <Text style={styles.profileText}>{defaultBoothBoyInfo.name.charAt(0)}</Text>
-          </View>
-        </View>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{defaultBoothBoyInfo.name}</Text>
-          <Text style={styles.headerSubtitle}>Booth Boy Dashboard - {defaultBoothBoyInfo.constituency}</Text>
-        </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <View style={styles.logoutIconContainer}>
-            <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
+  if (showVoterList) {
+    return (
+      <>
+        <VoterListScreen
+          filters={activeFilters}
+          boothBoyInfo={boothBoyData}
+          onBack={() => setShowVoterList(false)}
+          onMenuPress={onMenuPress}
+          onEditVoter={handleEditVoter}
+        />
+        <VoterEditModal
+          visible={showVoterEditModal}
+          voter={selectedVoterForEdit}
+          onClose={() => {
+            setShowVoterEditModal(false);
+            setSelectedVoterForEdit(null);
+          }}
+          onSave={handleSaveVoterData}
+        />
+      </>
+    );
+  }
+
+  const CustomDashboardContent = () => (
+    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <StatsRow stats={topRowStats} title="Booth Overview" />
+      
+      <View style={styles.cardSpacing}>
+        <HorizontalScrollCards
+          title="Party-wise Voters"
+          data={partyWiseData}
+          cardStyle="party"
+          onCardPress={handlePartyCardPress}
+          showTabs={true}
+        />
       </View>
 
-      <ScrollView style={styles.content}>
-        <BoothBoyProfile boothBoyInfo={defaultBoothBoyInfo} />
+      <View style={styles.demographicsSpacing}>
+        <DemographicsCard
+          genderData={demographicsData.gender}
+          ageData={demographicsData.age}
+          casteData={demographicsData.caste}
+          onDemographicPress={handleDemographicPress}
+        />
+      </View>
 
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Voter Statistics</Text>
-          <View style={styles.statsGrid}>
-            {Object.entries(voterStats).map(([key, value]) => (
-              <View key={key} style={styles.statCard}>
-                <Text style={styles.statValue}>{value.toLocaleString()}</Text>
-                <Text style={styles.statTitle}>{key.charAt(0).toUpperCase() + key.slice(1)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+      <View style={styles.cardSpacing}>
+        <HorizontalScrollCards
+          title="Influential Voting Families"
+          data={votingFamilies}
+          cardStyle="family"
+          onCardPress={handleFamilyCardPress}
+        />
+      </View>
 
-        <View style={styles.filtersSection}>
-          <Text style={styles.sectionTitle}>Filter Voters</Text>
-          <View style={styles.filtersGrid}>
-            {filterOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[styles.filterCard, { borderColor: option.color + '30' }]}
-                onPress={() => handleFilterSelect(option.id)}
-              >
-                <View style={[styles.filterIcon, { backgroundColor: option.color + '20' }]}>
-                  <AppIcon name={option.iconName} size={20} color={option.color} />
-                </View>
-                <Text style={styles.filterTitle}>{option.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+      <View style={styles.cardSpacing}>
+        <ElectionResultsCard />
+      </View>
+    </ScrollView>
+  );
 
-        <TouchableOpacity
-          style={styles.allVotersButton}
-          onPress={() => {
-            setActiveFilters({});
-            setShowVoterList(true);
-          }}
-        >
-          <Text style={styles.allVotersButtonText}>View All Voters</Text>
-        </TouchableOpacity>
-      </ScrollView>
+  return (
+    <View style={{ flex: 1 }}>
+      <DashboardHeader
+        title={boothBoyData.name}
+        subtitle={`Booth: ${boothBoyData.assignedBooths.join(', ')} • ${boothBoyData.constituency}`}
+        onMenuPress={onMenuPress}
+        onLogout={handleLogout}
+        showLogout={true}
+      />
+
+      <CustomDashboardContent />
 
       <FilterModal
         visible={showFilterModal}
@@ -139,38 +304,48 @@ const BoothBoyDashboard = ({ boothBoyInfo, onLogout, onMenuPress }) => {
         onClose={() => setShowFilterModal(false)}
         onApply={applyFilters}
       />
+
+      <VoterEditModal
+        visible={showVoterEditModal}
+        voter={selectedVoterForEdit}
+        onClose={() => {
+          setShowVoterEditModal(false);
+          setSelectedVoterForEdit(null);
+        }}
+        onSave={handleSaveVoterData}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  menuButton: { marginRight: 10 },
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  sectionContainer: {
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginLeft: 8,
+  },
+  cardSpacing: {
+    marginBottom: 4,
+  },
+  demographicsSpacing: {
+    marginBottom: 4,
+  },
 
-  profilePic: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  profileText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937', letterSpacing: 0.5 },
-  headerSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2, fontWeight: '500' },
-  logoutButton: { padding: 4 },
-  logoutIconContainer: { backgroundColor: '#EF4444', borderRadius: 20, padding: 8, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
-  content: { flex: 1, padding: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 15 },
-  statsSection: { marginBottom: 30 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  statCard: { backgroundColor: '#FFFFFF', padding: 15, borderRadius: 12, width: '48%', marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  statValue: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
-  statTitle: { fontSize: 14, color: '#6B7280', marginTop: 5 },
-  filtersSection: { marginBottom: 30 },
-  filtersGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  filterCard: { backgroundColor: '#FFFFFF', padding: 15, borderRadius: 12, width: '48%', marginBottom: 15, borderWidth: 1, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  filterIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-
-  filterTitle: { fontSize: 14, fontWeight: '600', color: '#111827', textAlign: 'center' },
-  allVotersButton: { backgroundColor: '#3B82F6', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 20 },
-  allVotersButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
 
 export default BoothBoyDashboard;

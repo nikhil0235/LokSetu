@@ -103,20 +103,19 @@ const ROLE_CONFIG = {
 
 const getRoleConfig = (role) => ROLE_CONFIG[role] || ROLE_CONFIG.booth_boy;
 
-const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }) => {
+const EnhancedUnifiedLoginScreen = ({ onNavigate, onLoginSuccess }) => {
   const [loginMethod, setLoginMethod] = useState('password');
-  const [showRoleInfo, setShowRoleInfo] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
-  const roleInfoAnim = useRef(new Animated.Value(0)).current;
   
-  // Preloaded credentials
-  const preloadedCredentials = {
-    super_admin: { username: 'nikh01', password: 'nikh123' },
-    admin: { username: 'admin', password: 'admin123' }
+  // Default login config
+  const loginConfig = {
+    title: 'LokSetu Login',
+    subtitle: 'Secure Access Portal',
+    description: 'Access your dashboard with secure authentication',
+    colors: ['#667eea', '#764ba2'],
+    shadowColor: '#667eea'
   };
-  
-  const roleConfig = getRoleConfig(selectedRole);
   
   const {
     formData,
@@ -130,15 +129,9 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
     handleResendOtp,
     resetOtpFlow,
     toggleRememberMe
-  } = useAuthFlow(selectedRole, onLoginSuccess);
+  } = useAuthFlow(onLoginSuccess); // Let backend determine role from credentials
 
   useEffect(() => {
-    // Preload credentials based on role
-    if (preloadedCredentials[selectedRole]) {
-      updateField('username', preloadedCredentials[selectedRole].username);
-      updateField('password', preloadedCredentials[selectedRole].password);
-    }
-    
     Animated.parallel([
       Animated.timing(fadeAnim, { 
         toValue: 1, 
@@ -152,21 +145,12 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
         useNativeDriver: true
       })
     ]).start();
-  }, [selectedRole]);
-
-  const toggleRoleInfo = () => {
-    setShowRoleInfo(!showRoleInfo);
-    Animated.timing(roleInfoAnim, {
-      toValue: showRoleInfo ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true
-    }).start();
-  };
+  }, []);
 
   const handleSuccessfulLogin = () => {
     Alert.alert(
       'Login Successful',
-      `Welcome back, ${roleConfig.title}! You now have access to ${roleConfig.subtitle.toLowerCase()}.`,
+      'Welcome back! Redirecting to your dashboard.',
       [{ text: 'Continue', onPress: onLoginSuccess }]
     );
   };
@@ -235,9 +219,9 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
       </View>
 
       <GradientButton
-        title={isLoading ? 'Authenticating...' : `Login as ${roleConfig.title}`}
+        title={isLoading ? 'Authenticating...' : 'Login'}
         onPress={handlePasswordLogin}
-        colors={roleConfig.colors}
+        colors={loginConfig.colors}
         disabled={isLoading}
         style={styles.loginButton}
         icon="log-in-outline"
@@ -253,8 +237,8 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
             style={styles.biometricButton}
           >
-            <AppIcon name="fingerprint" size={24} color={roleConfig.colors[0]} />
-            <Text style={[styles.biometricText, { color: roleConfig.colors[0] }]}>
+            <AppIcon name="fingerprint" size={24} color={loginConfig.colors[0]} />
+            <Text style={[styles.biometricText, { color: loginConfig.colors[0] }]}>
               Use Biometric Login
             </Text>
           </LinearGradient>
@@ -330,7 +314,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           <GradientButton
             title="Verify & Login"
             onPress={handleVerifyOtp}
-            colors={roleConfig.colors}
+            colors={loginConfig.colors}
             disabled={!formState.validation.otp}
             icon="shield-checkmark-outline"
           />
@@ -344,53 +328,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
     </View>
   );
 
-  const renderRoleInfo = () => (
-    <Animated.View style={[
-      styles.roleInfoContainer,
-      {
-        opacity: roleInfoAnim,
-        transform: [{
-          translateY: roleInfoAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [-20, 0]
-          })
-        }]
-      }
-    ]}>
-      <ScrollView style={styles.roleInfoScroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.roleInfoHeader}>
-          <LinearGradient
-            colors={roleConfig.colors}
-            style={styles.roleInfoIcon}
-          >
-            <AppIcon name="admin-panel-settings" size={32} color="#FFFFFF" />
-          </LinearGradient>
-          <Text style={styles.roleInfoTitle}>{roleConfig.title}</Text>
-          <Text style={styles.roleInfoDescription}>{roleConfig.description}</Text>
-        </View>
 
-        <View style={styles.permissionsSection}>
-          <Text style={styles.sectionTitle}>Key Permissions</Text>
-          {roleConfig.permissions.map((permission, index) => (
-            <View key={index} style={styles.permissionItem}>
-              <AppIcon name="check-circle" size={16} color={roleConfig.colors[0]} />
-              <Text style={styles.permissionText}>{permission}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Available Features</Text>
-          {roleConfig.features.map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <AppIcon name="arrow-forward" size={16} color={roleConfig.colors[1]} />
-              <Text style={styles.featureText}>{feature}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </Animated.View>
-  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -399,14 +337,14 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
       
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <BackButton onPress={() => onNavigate('main')} />
-          <TouchableOpacity onPress={toggleRoleInfo} style={styles.infoButton}>
-            <AppIcon name="info" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoEmoji}>🇮🇳</Text>
+            <Text style={styles.appName}>LokSetu</Text>
+          </View>
         </View>
 
         <Animated.View style={[
-          styles.roleHeader,
+          styles.loginHeader,
           {
             opacity: fadeAnim,
             transform: [{
@@ -417,24 +355,12 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
             }]
           }
         ]}>
-          <LinearGradient
-            colors={roleConfig.colors}
-            style={styles.roleIconContainer}
-          >
-            <AppIcon name="admin-panel-settings" size={28} color="#FFFFFF" />
-          </LinearGradient>
-          <View style={styles.roleTextContainer}>
-            <Text style={styles.roleTitle}>{roleConfig.title}</Text>
-            <Text style={styles.roleSubtitle}>{roleConfig.subtitle}</Text>
-          </View>
-          <View style={styles.statusBadge}>
-            <AppIcon name="security" size={14} color={roleConfig.colors[0]} />
-            <Text style={[styles.statusText, { color: roleConfig.colors[0] }]}>Secure</Text>
-          </View>
+          <Text style={styles.welcomeTitle}>Welcome Back</Text>
+          <Text style={styles.welcomeSubtitle}>Sign in to access your dashboard</Text>
         </Animated.View>
       </View>
 
-      {showRoleInfo && renderRoleInfo()}
+
 
       <Animated.View style={[
         styles.content,
@@ -448,7 +374,7 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
           }]
         }
       ]}>
-        <View style={[styles.loginCard, { shadowColor: roleConfig.shadowColor }]}>
+        <View style={[styles.loginCard, { shadowColor: loginConfig.shadowColor }]}>
           <View style={styles.glassOverlay} />
           
           <View style={styles.tabContainer}>
@@ -459,11 +385,11 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
               <AppIcon 
                 name="lock" 
                 size={18} 
-                color={loginMethod === 'password' ? roleConfig.colors[0] : '#9CA3AF'} 
+                color={loginMethod === 'password' ? loginConfig.colors[0] : '#9CA3AF'} 
               />
               <Text style={[
                 styles.tabText, 
-                loginMethod === 'password' && [styles.activeTabText, { color: roleConfig.colors[0] }]
+                loginMethod === 'password' && [styles.activeTabText, { color: loginConfig.colors[0] }]
               ]}>
                 Password
               </Text>
@@ -476,11 +402,11 @@ const EnhancedUnifiedLoginScreen = ({ onNavigate, selectedRole, onLoginSuccess }
               <AppIcon 
                 name="phone" 
                 size={18} 
-                color={loginMethod === 'otp' ? roleConfig.colors[0] : '#9CA3AF'} 
+                color={loginMethod === 'otp' ? loginConfig.colors[0] : '#9CA3AF'} 
               />
               <Text style={[
                 styles.tabText, 
-                loginMethod === 'otp' && [styles.activeTabText, { color: roleConfig.colors[0] }]
+                loginMethod === 'otp' && [styles.activeTabText, { color: loginConfig.colors[0] }]
               ]}>
                 OTP
               </Text>
@@ -509,14 +435,25 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 0,
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  infoButton: {
-    padding: 5,
+  logoContainer: {
+    alignItems: 'center',
   },
-  roleHeader: {
-    flexDirection: 'row',
+  logoEmoji: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  loginHeader: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
     padding: 20,
@@ -524,123 +461,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  roleIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  roleTextContainer: {
-    flex: 1,
-  },
-  roleTitle: {
-    fontSize: 18,
+  welcomeTitle: {
+    fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  roleSubtitle: {
-    fontSize: 14,
+  welcomeSubtitle: {
+    fontSize: 16,
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  roleInfoContainer: {
-    position: 'absolute',
-    top: 140,
-    left: 20,
-    right: 20,
-    bottom: 20,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 20,
-    maxHeight: height * 0.6,
-    zIndex: 1000,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-  },
-  roleInfoScroll: {
-    padding: 20,
-  },
-  roleInfoHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  roleInfoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  roleInfoTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
-  },
-  roleInfoDescription: {
-    fontSize: 14,
-    color: '#666',
     textAlign: 'center',
-    lineHeight: 20,
   },
-  permissionsSection: {
-    marginBottom: 20,
-  },
-  featuresSection: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
-  },
-  permissionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  permissionText: {
-    fontSize: 14,
-    color: '#555',
-    flex: 1,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  featureText: {
-    fontSize: 14,
-    color: '#555',
-    flex: 1,
-  },
+
+
   content: { 
     position: 'fixed',
     bottom: -20,

@@ -80,18 +80,13 @@ const BoothSelectionScreen = ({ onBack, onBoothsSelected }) => {
   const loadBooths = async () => {
     setLoading(true);
     try {
-      const bodyData = {
+      const boothsData = await apiClient.get('/general/booths', token, {
         state_id: selectedState,
         district_id: selectedDistrict,
         assembly_id: selectedAssembly
-      };
+      });
       
       console.log('Booths response:', boothsData);
-      const boothsData = await apiClient.get('/general/booths', token, {
-    state_id: 'S04',
-    district_id: 'S0429',
-    assembly_id: '195'
-  });
 
       
       if (Array.isArray(boothsData)) {

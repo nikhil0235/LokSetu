@@ -92,13 +92,14 @@ const ConstituencyAssignmentScreen = ({ onBack, onLogout }) => {
         
         const updatedAssignments = assignmentArray.join(',');
         
-        console.log(`Calling PATCH /users/${admin.Username} with:`, {
+        console.log(`Calling PATCH /users/${admin.UserID} with:`, {
           assigned_constituencies: updatedAssignments
         });
+        console.log('UserID type:', typeof admin.UserID, 'Value:', admin.UserID);
         
-        return userService.updateUser(admin.Username, {
+        return userService.updateUser(admin.UserID, {
           assigned_constituencies: updatedAssignments
-        });
+        }, token);
       });
 
       const results = await Promise.all(assignmentPromises);

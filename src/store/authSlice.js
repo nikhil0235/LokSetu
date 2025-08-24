@@ -15,8 +15,12 @@ export const loginUser = createAsyncThunk(
       const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials);
       console.log("response", response);
       
-      // Load dashboard data only once after successful login
+      // Store token first, then load dashboard data
       if (response.access_token) {
+        const bearerToken = response.access_token;
+        storage.setToken(bearerToken);
+        
+        // Now load dashboard data with the stored token
         await dispatch(loadDashboardData());
       }
       
@@ -65,7 +69,8 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.error = null;
-      storage.clearAuth();
+      // Clear storage asynchronously
+      storage.clearAuth().catch(console.error);
       cacheManager.clearAllCache();
     },
     setAuthData: (state, action) => {
@@ -96,7 +101,7 @@ const authSlice = createSlice({
         console.log('Created by:', action.payload.created_by);
         console.log('============================');
         
-        const { access_token, token_type, selectedRole, created_users, ...userData } = action.payload;
+        const { access_token, token_type, created_users, ...userData } = action.payload;
         const bearerToken = access_token; // Don't add Bearer prefix, base.jsx will add it
         
         // Clear cache for new user login
@@ -115,7 +120,7 @@ const authSlice = createSlice({
         
         const finalUserData = {
           ...userData,
-          role: selectedRole || userData.role,
+          role: userData.role, // Use role from backend response
           created_users: created_users || [],
           all_admins: admins,
           all_booth_boys: boothBoys

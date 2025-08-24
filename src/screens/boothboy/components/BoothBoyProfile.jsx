@@ -26,11 +26,11 @@ const BoothBoyProfile = ({ boothBoyInfo }) => {
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Assigned Booths:</Text>
-          <Text style={styles.infoValue}>{boothBoyInfo?.assignedBooths?.join(', ') || 'None'}</Text>
+          <Text style={styles.infoValue}>{Array.isArray(boothBoyInfo?.assignedBooths) ? boothBoyInfo.assignedBooths.join(', ') : 'None'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Total Voters:</Text>
-          <Text style={styles.infoValue}>{boothBoyInfo?.totalVoters?.toLocaleString() || '0'}</Text>
+          <Text style={styles.infoValue}>{typeof boothBoyInfo?.totalVoters === 'number' ? boothBoyInfo.totalVoters.toLocaleString() : '0'}</Text>
         </View>
       </View>
     </View>
@@ -40,14 +40,16 @@ const BoothBoyProfile = ({ boothBoyInfo }) => {
 const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
+    padding: 24,
+    borderRadius: 16,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -55,13 +57,18 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 16,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatarText: {
     fontSize: 24,
@@ -72,9 +79,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#111827',
+    letterSpacing: 0.3,
   },
   profileId: {
     fontSize: 14,
@@ -88,24 +96,27 @@ const styles = StyleSheet.create({
   },
   assignmentInfo: {
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 15,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 20,
+    marginTop: 4,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingVertical: 2,
   },
   infoLabel: {
     fontSize: 14,
     color: '#6B7280',
     flex: 1,
+    fontWeight: '500',
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
-    flex: 1,
+    flex: 1.2,
     textAlign: 'right',
   },
 });

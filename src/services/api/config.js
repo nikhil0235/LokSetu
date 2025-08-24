@@ -7,9 +7,16 @@ export const API_CONFIG = {
 
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',
+  PARTY_ADMIN: 'party_admin',
   ADMIN: 'admin',
-  BOOTH_BOY: 'booth_boy'
+  BOOTH_BOY: 'booth_boy',
+  CANDIDATE: 'candidate',
+  BLOCK_PRABHARI: 'block_prabhari',
+  PANCHAYAT_PRABHARI: 'panchayat_prabhari',
+  VIDHANSABHA_PRABHARI: 'vidhansabha_prabhari'
 };
+
+
 
 export const ENDPOINTS = {
   // Health check
@@ -43,5 +50,13 @@ export const ENDPOINTS = {
     DISTRICTS: '/general/districts',
     ASSEMBLY: '/general/assembly',
     BOOTHS: '/general/booths'
+  },
+  
+  // Booth assignment endpoints
+  BOOTH_ASSIGNMENTS: {
+    LIST: '/booth-assignments/',
+    CREATE: '/booth-assignments/',
+    UPDATE: (assignmentId) => `/booth-assignments/${assignmentId}`,
+    DELETE: (assignmentId) => `/booth-assignments/${assignmentId}`
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,27 +9,40 @@ import {
   TextInput,
 } from 'react-native';
 
+const FILTER_OPTIONS = {
+  booth: ['B001', 'B002', 'B003', 'B004', 'B005'],
+  age: ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'],
+  caste: ['General', 'OBC', 'SC', 'ST'],
+  verification: ['Verified', 'Unverified'],
+  gender: ['M', 'F', 'O'],
+  address: ['Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5']
+};
+
+const FILTER_TITLES = {
+  booth: 'Select Booth',
+  age: 'Select Age Group',
+  caste: 'Select Caste Category',
+  verification: 'Select Verification Status',
+  gender: 'Select Gender',
+  address: 'Select Address/Area'
+};
+
+const FILTER_PLURALS = {
+  booth: 'Booths',
+  age: 'Ages',
+  caste: 'Caste',
+  verification: 'Status',
+  gender: 'Gender',
+  address: 'Areas'
+};
+
 const FilterModal = ({ visible, filterType, onClose, onApply }) => {
   const [selectedValue, setSelectedValue] = useState('');
   const [customValue, setCustomValue] = useState('');
 
-  const filterOptions = {
-    booth: ['B001', 'B002', 'B003', 'B004', 'B005'],
-    age: ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'],
-    caste: ['General', 'OBC', 'SC', 'ST'],
-    verification: ['Verified', 'Unverified'],
-    gender: ['M', 'F', 'O'],
-    address: ['Ward 1', 'Ward 2', 'Ward 3', 'Ward 4', 'Ward 5']
-  };
-
-  const filterTitles = {
-    booth: 'Select Booth',
-    age: 'Select Age Group',
-    caste: 'Select Caste Category',
-    verification: 'Select Verification Status',
-    gender: 'Select Gender',
-    address: 'Select Address/Area'
-  };
+  const options = useMemo(() => FILTER_OPTIONS[filterType] || [], [filterType]);
+  const title = useMemo(() => FILTER_TITLES[filterType] || 'Select Filter', [filterType]);
+  const pluralLabel = useMemo(() => FILTER_PLURALS[filterType] || filterType, [filterType]);
 
   useEffect(() => {
     setSelectedValue('');
@@ -45,8 +58,7 @@ const FilterModal = ({ visible, filterType, onClose, onApply }) => {
     }
   };
 
-  const options = filterOptions[filterType] || [];
-  const title = filterTitles[filterType] || 'Select Filter';
+
 
   return (
     <Modal
@@ -76,7 +88,7 @@ const FilterModal = ({ visible, filterType, onClose, onApply }) => {
                 styles.optionText,
                 selectedValue === '' && styles.selectedOptionText
               ]}>
-                All {filterType === 'booth' ? 'Booths' : filterType === 'age' ? 'Ages' : filterType}
+                All {pluralLabel}
               </Text>
             </TouchableOpacity>
 

@@ -11,15 +11,20 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { AppIcon } from '../../components/common';
 import { loadDashboardData } from '../../store/slices/dashboardSlice';
+import { logout } from '../../store/authSlice';
 
 const { width } = Dimensions.get('window');
 
-const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen, onMenuPress }) => {
+const SuperAdminDashboardScreen = ({ onNavigate, onBack, currentScreen, onMenuPress }) => {
   const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
   const { stats, admins, boothBoys, loading, lastUpdated } = useSelector(state => state.dashboard);
   const [refreshing, setRefreshing] = useState(false);
   const [recentActivities, setRecentActivities] = useState([]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -107,7 +112,7 @@ const SuperAdminDashboardScreen = ({ onLogout, onNavigate, onBack, currentScreen
           <Text style={styles.adminName}>Super Admin Portal</Text>
           <Text style={styles.greeting}>System Overview & Analytics</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <View style={styles.logoutIconContainer}>
             <AppIcon name="power-settings-new" size={20} color="#FFFFFF" />
           </View>

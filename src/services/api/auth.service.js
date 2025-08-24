@@ -2,8 +2,18 @@ import { apiClient } from './client';
 import { ENDPOINTS } from './config';
 
 export const authService = {
-  login: (credentials) => apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials),
-  resetPassword: (data, token) => apiClient.post(ENDPOINTS.AUTH.RESET_PASSWORD, data, token),
-  forgetPassword: (data) => apiClient.post(ENDPOINTS.AUTH.FORGET_PASSWORD, data),
-  verifyToken: (token) => apiClient.post(ENDPOINTS.AUTH.VERIFY, {}, token)
+  login: async (credentials) => {
+    return apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials);
+  },
+
+  forgotPassword: async (username) => {
+    return apiClient.post(ENDPOINTS.AUTH.FORGOT_PASSWORD, { username });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    return apiClient.post(ENDPOINTS.AUTH.RESET_PASSWORD, { 
+      token, 
+      new_password: newPassword 
+    });
+  }
 };

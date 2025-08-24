@@ -6,14 +6,14 @@ import { ValidationRules, getPasswordStrength } from '../utils/validation.enhanc
 import { useBiometric } from './useBiometric';
 import { storage } from '../utils/storage';
 
-export const useAuthFlow = (selectedRole, onLoginSuccess) => {
+export const useAuthFlow = (onLoginSuccess) => {
   const dispatch = useDispatch();
   const { isLoading } = useSelector(state => state.auth);
   const { isAvailable: biometricAvailable, authenticate: biometricAuth } = useBiometric();
   
   const [formData, setFormData] = useState({
-    username: 'admin',
-    password: 'admin123',
+    username: 'boothboy1',
+    password: 'booth123',
     phoneNumber: '',
     otp: ''
   });
@@ -33,6 +33,12 @@ export const useAuthFlow = (selectedRole, onLoginSuccess) => {
       setFormState(prev => ({ ...prev, passwordStrength: getPasswordStrength(formData.password) }));
     }
   }, [formData.password]);
+
+  useEffect(() => {
+    // Validate default credentials on mount
+    validateField('username', formData.username);
+    validateField('password', formData.password);
+  }, []);
 
   useEffect(() => {
     checkSavedCredentials();
@@ -85,21 +91,12 @@ export const useAuthFlow = (selectedRole, onLoginSuccess) => {
       if (savedCredentials) {
         const result = await dispatch(loginUser({
           username: savedCredentials.username,
-          password: savedCredentials.password,
-          selectedRole
+          password: savedCredentials.password
         })).unwrap();
         
         const userData = {
           ...result,
-          name: result.fullname || 
-                (selectedRole === 'super_admin' ? 'Super Admin' : 
-                 selectedRole === 'admin' ? 'Admin' : result.name),
-          ...(selectedRole === 'booth_boy' && {
-            assignedBooths: result.assigned_booths || [],
-            constituency: result.constituency,
-            area: result.area,
-            totalVoters: result.totalVoters || 0
-          })
+          name: result.fullname || result.name || result.username
         };
         
         onLoginSuccess(userData);
@@ -118,8 +115,7 @@ export const useAuthFlow = (selectedRole, onLoginSuccess) => {
     try {
       const credentials = { 
         username: formData.username, 
-        password: formData.password, 
-        selectedRole 
+        password: formData.password
       };
       
       const result = await dispatch(loginUser(credentials)).unwrap();
@@ -128,18 +124,10 @@ export const useAuthFlow = (selectedRole, onLoginSuccess) => {
         await storage.saveCredentials(credentials.username, credentials.password);
       }
       
-      // Handle different user types
+      // Use backend response data directly
       const userData = {
         ...result,
-        name: result.fullname || 
-              (selectedRole === 'super_admin' ? 'Super Admin' : 
-               selectedRole === 'admin' ? 'Admin' : result.name),
-        ...(selectedRole === 'booth_boy' && {
-          assignedBooths: result.assigned_booths || [],
-          constituency: result.constituency,
-          area: result.area,
-          totalVoters: result.totalVoters || 0
-        })
+        name: result.fullname || result.name || result.username
       };
       
       onLoginSuccess(userData);
@@ -180,18 +168,10 @@ export const useAuthFlow = (selectedRole, onLoginSuccess) => {
       
       const userData = {
         username: formData.phoneNumber,
-        role: selectedRole,
-        name: selectedRole === 'super_admin' ? 'Super Admin' : 
-              selectedRole === 'admin' ? 'Admin' : 'OTP User',
+        role: 'booth_volunteer', // Default for OTP login
+        name: 'OTP User',
         phone: `+91${formData.phoneNumber}`,
-        loginMethod: 'otp',
-        ...(selectedRole === 'booth_boy' && {
-          id: 'BB002',
-          assignedBooths: ['B004', 'B005'],
-          constituency: 'Constituency-2',
-          area: 'South Zone',
-          totalVoters: 1523
-        })
+        loginMethod: 'otp'
       };
       
       onLoginSuccess(userData);

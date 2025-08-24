@@ -11,16 +11,16 @@ import {
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { createUser } from '../../store/userSlice';
+import { loadAdminDashboardData } from '../../store/slices/adminDashboardSlice';
 import InputField from '../../components/common/InputField';
 import PasswordInputField from '../../components/common/PasswordInputField';
-import BoothSelectionScreen from './BoothSelectionScreen';
+
 import { AppIcon, BackButton } from '../../components/common';
 
-const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
+const CreateBoothBoyScreen = ({ onBack }) => {
   const dispatch = useDispatch();
   const { user, token } = useSelector(state => state.auth);
   const { isLoading } = useSelector(state => state.users);
-  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: 'Test Booth Boy',
@@ -30,25 +30,9 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
     password: 'TestPass123',
     confirmPassword: 'TestPass123',
     role: 'booth_boy',
-    assigned_booths: ['195001', '195002'],
   });
   
-  const [showBoothSelection, setShowBoothSelection] = useState(false);
 
-  const handleBoothsSelected = (booths) => {
-    const boothIds = booths.map(booth => booth.partId);
-    handleFieldChange('assigned_booths', boothIds);
-    setShowBoothSelection(false);
-  };
-
-  if (showBoothSelection) {
-    return (
-      <BoothSelectionScreen
-        onBack={() => setShowBoothSelection(false)}
-        onBoothsSelected={handleBoothsSelected}
-      />
-    );
-  }
   
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -77,8 +61,7 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       case 'confirmPassword':
         return !value ? 'Please confirm password' :
                value !== formData.password ? 'Passwords do not match' : '';
-      case 'assigned_booths':
-        return value.length === 0 ? 'Please assign at least one booth' : '';
+
       default:
         return '';
     }
@@ -124,6 +107,9 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       
       await dispatch(createUser(userData)).unwrap();
       
+      // Refresh admin dashboard data to update created users list
+      dispatch(loadAdminDashboardData(true));
+      
       Alert.alert(
         'Success!',
         `Booth Boy "${formData.full_name}" has been created successfully.`,
@@ -139,7 +125,6 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
                 password: '',
                 confirmPassword: '',
                 role: 'booth_boy',
-                assigned_booths: [],
               });
               setErrors({});
               setTouched({});
@@ -161,8 +146,7 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
 
   const isFormValid = () => {
     const hasAllFields = formData.full_name && formData.email && formData.phone && 
-      formData.username && formData.password && formData.confirmPassword && 
-      formData.assigned_booths.length > 0;
+      formData.username && formData.password && formData.confirmPassword;
     
     const hasNoErrors = Object.values(errors).every(error => !error);
     
@@ -188,10 +172,6 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
       <View style={styles.header}>
         <BackButton onPress={onBack} />
         <Text style={styles.headerTitle}>Create Booth Boy</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <AppIcon name="power-settings-new" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -270,22 +250,7 @@ const CreateBoothBoyScreen = ({ onBack, onLogout }) => {
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Booth Assignment *</Text>
-          <TouchableOpacity 
-            style={styles.boothSelectionButton}
-            onPress={() => setShowBoothSelection(true)}
-          >
-            <AppIcon name="location-on" size={20} color="#007AFF" />
-            <Text style={styles.boothSelectionText}>
-              {formData.assigned_booths.length > 0 
-                ? `${formData.assigned_booths.length} booths selected`
-                : 'Select Booths'}
-            </Text>
-            <AppIcon name="arrow-forward-ios" size={16} color="#007AFF" />
-          </TouchableOpacity>
-          {errors.assigned_booths && <Text style={styles.errorText}>{errors.assigned_booths}</Text>}
-        </View>
+
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Default Permissions</Text>
@@ -476,22 +441,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  boothSelectionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8FF',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-  },
-  boothSelectionText: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
+
 });
 
 export default CreateBoothBoyScreen;

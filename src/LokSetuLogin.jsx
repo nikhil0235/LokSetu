@@ -18,7 +18,7 @@ import ResetPasswordScreen from './screens/auth/LoginScreen/ResetPasswordScreen'
 
 
 const LokSetuLogin = ({ onLoginSuccess, resetToken }) => {
-  const [currentScreen, setCurrentScreen] = useState(resetToken ? 'resetPassword' : 'main'); // 'main', 'password', 'otp', 'resetPassword'
+  const [currentScreen, setCurrentScreen] = useState(resetToken ? 'resetPassword' : 'login'); // Skip role selection, go directly to login
   const [showHeader, setShowHeader] = useState(true);
   const [selectedRole, setSelectedRole] = useState('super_admin');
 
@@ -59,8 +59,10 @@ const LokSetuLogin = ({ onLoginSuccess, resetToken }) => {
         return <ForgotPasswordScreen {...screenProps} />;
       case 'resetPassword':
         return <ResetPasswordScreen {...screenProps} resetToken={resetToken} />;
-      default:
+      case 'main':
         return <MainLoginScreen {...screenProps} />;
+      default:
+        return <UnifiedLoginScreen {...screenProps} />; // Default to unified login screen
     }
   };
 

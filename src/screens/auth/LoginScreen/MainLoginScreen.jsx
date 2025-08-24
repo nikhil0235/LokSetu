@@ -20,7 +20,7 @@ import IndianFlagDecoration from '../../../components/Feature/IndianFlagDecorati
 
 const MainLoginScreen = ({ onNavigate, selectedRole, setSelectedRole }) => {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;

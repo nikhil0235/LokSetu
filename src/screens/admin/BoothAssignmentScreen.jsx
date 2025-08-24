@@ -10,7 +10,9 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { Picker } from '@react-native-picker/picker';
+import { boothService } from '../../services/api/booth.service';
 const icons = {
   MapPin: '📍',
   Users: '👥',
@@ -20,7 +22,8 @@ const icons = {
   ArrowRight: '➡️',
 };
 
-const BoothAssignmentScreen = ({ onBack, onLogout }) => {
+const BoothAssignmentScreen = ({ onBack }) => {
+  const { token } = useSelector(state => state.auth);
   const [boothBoys, setBoothBoys] = useState([]);
   const [booths, setBooths] = useState([]);
   const [filteredBooths, setFilteredBooths] = useState([]);
@@ -30,117 +33,71 @@ const BoothAssignmentScreen = ({ onBack, onLogout }) => {
   const [filterArea, setFilterArea] = useState('all');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Mock data
-  const mockBoothBoys = [
-    {
-      id: 1,
-      name: 'Suresh Patel',
-      phone: '+91-9876543210',
-      assignedBooths: 3,
-      maxBooths: 5,
-      area: 'North Zone',
-      status: 'active',
-    },
-    {
-      id: 2,
-      name: 'Meera Joshi',
-      phone: '+91-9876543211',
-      assignedBooths: 2,
-      maxBooths: 4,
-      area: 'South Zone',
-      status: 'active',
-    },
-    {
-      id: 3,
-      name: 'Ravi Kumar',
-      phone: '+91-9876543212',
-      assignedBooths: 4,
-      maxBooths: 6,
-      area: 'East Zone',
-      status: 'active',
-    },
-    {
-      id: 4,
-      name: 'Anita Singh',
-      phone: '+91-9876543213',
-      assignedBooths: 0,
-      maxBooths: 3,
-      area: 'West Zone',
-      status: 'active',
-    },
-  ];
-
-  const mockBooths = [
-    {
-      id: 1,
-      boothNumber: '001',
-      boothName: 'Government Primary School',
-      area: 'North Zone',
-      address: 'Sector 15, Phase 1',
-      totalVoters: 1245,
-      assignedTo: null,
-      status: 'unassigned',
-    },
-    {
-      id: 2,
-      boothNumber: '002',
-      boothName: 'Community Hall',
-      area: 'North Zone',
-      address: 'Sector 16, Phase 1',
-      totalVoters: 1156,
-      assignedTo: 1,
-      assignedToName: 'Suresh Patel',
-      status: 'assigned',
-    },
-    {
-      id: 3,
-      boothNumber: '003',
-      boothName: 'Municipal Office',
-      area: 'South Zone',
-      address: 'Sector 22, Phase 2',
-      totalVoters: 1567,
-      assignedTo: null,
-      status: 'unassigned',
-    },
-    {
-      id: 4,
-      boothNumber: '004',
-      boothName: 'Secondary School',
-      area: 'East Zone',
-      address: 'Sector 8, Phase 3',
-      totalVoters: 1389,
-      assignedTo: 3,
-      assignedToName: 'Ravi Kumar',
-      status: 'assigned',
-    },
-    {
-      id: 5,
-      boothNumber: '005',
-      boothName: 'Temple Complex',
-      area: 'West Zone',
-      address: 'Sector 12, Phase 2',
-      totalVoters: 1423,
-      assignedTo: null,
-      status: 'unassigned',
-    },
-    {
-      id: 6,
-      boothNumber: '006',
-      boothName: 'Library Hall',
-      area: 'South Zone',
-      address: 'Sector 25, Phase 3',
-      totalVoters: 1234,
-      assignedTo: 2,
-      assignedToName: 'Meera Joshi',
-      status: 'assigned',
-    },
-  ];
+  // Load data from API
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [boothBoysData, boothsData] = await Promise.all([
+        boothService.getBoothBoys(token),
+        boothService.getBooths(token, {
+          state_id: 'S04',
+          district_id: 'S0429',
+          assembly_id: '195'
+        })
+      ]);
+      
+      // Transform booth boys data
+      const transformedBoothBoys = boothBoysData.map(user => ({
+        id: user.UserID || user.user_id,
+        name: user.FullName || user.full_name || user.Username,
+        phone: user.Phone || user.phone,
+        assignedBooths: user.AssignedBoothIDs ? user.AssignedBoothIDs.split(',').filter(id => id).length : 0,
+        maxBooths: 5, // Default max booths
+        area: 'General', // Default area
+        status: 'active',
+        assignedBoothIds: user.AssignedBoothIDs ? user.AssignedBoothIDs.split(',').filter(id => id) : []
+      }));
+      
+      // Transform booths data
+      const transformedBooths = Array.isArray(boothsData) ? boothsData.map(booth => ({
+        id: booth.partId,
+        boothNumber: booth.partNumber,
+        boothName: booth.partName,
+        area: 'General',
+        address: booth.partName,
+        totalVoters: 0, // Not available in current API
+        assignedTo: null,
+        assignedToName: null,
+        status: 'unassigned'
+      })) : [];
+      
+      // Check which booths are assigned
+      transformedBooths.forEach(booth => {
+        const assignedBoothBoy = transformedBoothBoys.find(bb => 
+          bb.assignedBoothIds.includes(booth.id.toString())
+        );
+        if (assignedBoothBoy) {
+          booth.assignedTo = assignedBoothBoy.id;
+          booth.assignedToName = assignedBoothBoy.name;
+          booth.status = 'assigned';
+        }
+      });
+      
+      setBoothBoys(transformedBoothBoys);
+      setBooths(transformedBooths);
+      setFilteredBooths(transformedBooths);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      Alert.alert('Error', 'Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setBoothBoys(mockBoothBoys);
-    setBooths(mockBooths);
-    setFilteredBooths(mockBooths);
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -194,36 +151,17 @@ const BoothAssignmentScreen = ({ onBack, onLogout }) => {
     setIsAssigning(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get current assigned booth IDs and add new ones
+      const currentBoothIds = boothBoy.assignedBoothIds || [];
+      const newBoothIds = selectedBooths.map(booth => booth.id.toString());
+      const allBoothIds = [...currentBoothIds, ...newBoothIds];
       
-      // Update booths
-      const updatedBooths = booths.map(booth => {
-        const isSelectedBooth = selectedBooths.some(sb => sb.id === booth.id);
-        if (isSelectedBooth) {
-          return {
-            ...booth,
-            assignedTo: selectedBoothBoy,
-            assignedToName: boothBoy.name,
-            status: 'assigned',
-          };
-        }
-        return booth;
-      });
-
-      // Update booth boys
-      const updatedBoothBoys = boothBoys.map(bb => {
-        if (bb.id === selectedBoothBoy) {
-          return {
-            ...bb,
-            assignedBooths: bb.assignedBooths + selectedBooths.length,
-          };
-        }
-        return bb;
-      });
-
-      setBooths(updatedBooths);
-      setBoothBoys(updatedBoothBoys);
+      // Call API to assign booths
+      await boothService.assignBooths(token, selectedBoothBoy, allBoothIds);
+      
+      // Reload data to reflect changes
+      await loadData();
+      
       setSelectedBooths([]);
       setSelectedBoothBoy(null);
       setShowAssignModal(false);
@@ -233,7 +171,8 @@ const BoothAssignmentScreen = ({ onBack, onLogout }) => {
         `Successfully assigned ${selectedBooths.length} booths to ${boothBoy.name}.`
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to assign booths. Please try again.');
+      console.error('Assignment error:', error);
+      Alert.alert('Error', error.message || 'Failed to assign booths. Please try again.');
     } finally {
       setIsAssigning(false);
     }
@@ -387,24 +326,28 @@ const BoothAssignmentScreen = ({ onBack, onLogout }) => {
             <Text style={styles.headerSubtitle}>Assign booths to booth boys</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>🚪 Logout</Text>
-        </TouchableOpacity>
+
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Booth Boy Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Booth Boy</Text>
-          <FlatList
-            data={boothBoys}
-            renderItem={({ item }) => <BoothBoyCard boothBoy={item} />}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          />
-        </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading booth assignment data...</Text>
+          </View>
+        ) : (
+          <>
+            {/* Booth Boy Selection */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Select Booth Boy</Text>
+              <FlatList
+                data={boothBoys}
+                renderItem={({ item }) => <BoothBoyCard boothBoy={item} />}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalList}
+              />
+            </View>
 
         {/* Search and Filter */}
         <View style={styles.section}>
@@ -457,6 +400,8 @@ const BoothAssignmentScreen = ({ onBack, onLogout }) => {
             )}
           />
         </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Assignment Button */}
@@ -821,6 +766,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
   },

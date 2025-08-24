@@ -11,7 +11,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { loadAdminDashboardData } from '../../store/slices/adminDashboardSlice';
 import { AppIcon, BackButton } from '../../components/common';
 
-const CreatedUsersScreen = ({ onBack, onLogout }) => {
+const CreatedUsersScreen = ({ onBack }) => {
   const dispatch = useDispatch();
   const { createdUsers, admins, boothBoys, stats } = useSelector(state => state.adminDashboard);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,9 +83,6 @@ const CreatedUsersScreen = ({ onBack, onLogout }) => {
       <View style={styles.header}>
         <BackButton onPress={onBack} />
         <Text style={styles.headerTitle}>Created Users</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <AppIcon name="power-settings-new" size={20} color="#EF4444" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.statsContainer}>

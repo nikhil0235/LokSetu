@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { boothService } from '../services/api/boothService';
+import { boothService } from '../services/api/booth.service';
 
 // Async thunks
 export const fetchBooths = createAsyncThunk(

@@ -2,9 +2,15 @@ import { apiClient } from './client';
 import { ENDPOINTS } from './config';
 
 export const voterService = {
-  getList: (params, token) => {
-    const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return apiClient.get(`${ENDPOINTS.VOTERS.LIST}${queryString}`, token);
+  getList: async (token, filters = {}) => {
+    return apiClient.get(ENDPOINTS.VOTERS.LIST, token, filters);
   },
-  update: (voterData, token) => apiClient.patch(ENDPOINTS.VOTERS.UPDATE, voterData, token)
+
+  getByEpicId: async (epicId, token) => {
+    return apiClient.get(ENDPOINTS.VOTERS.GET_BY_EPIC(epicId), token);
+  },
+
+  updateVoter: async (epicId, voterData, token) => {
+    return apiClient.patch(ENDPOINTS.VOTERS.UPDATE(epicId), voterData, token);
+  }
 };

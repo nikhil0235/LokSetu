@@ -7,22 +7,54 @@ import {
   StyleSheet,
   RefreshControl,
   Dimensions,
+  Animated,
+  Modal,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppIcon } from '../../components/common';
 import { loadAdminDashboardData } from '../../store/slices/adminDashboardSlice';
 import CreatedUsersScreen from './CreatedUsersScreen';
+import CreateBoothBoyScreen from './CreateBoothBoyScreen';
+import BoothAssignmentScreen from './BoothAssignmentScreen';
 import { logout } from '../../store/authSlice';
 
 const { width } = Dimensions.get('window');
 
-const AdminDashboardScreen = () => {
+const getRoleDisplayName = (userType) => {
+  const roleNames = {
+    'admin': 'Admin',
+    'political_party': 'Political Party',
+    'candidate': 'Candidate',
+    'vidhan_sabha_prabhari': 'Vidhan Sabha Prabhari',
+    'block_prabhari': 'Block Prabhari',
+    'panchayat_prabhari': 'Panchayat Prabhari',
+    'booth_volunteer': 'Booth Volunteer'
+  };
+  return roleNames[userType] || 'User';
+};
+
+const getRoleDashboardTitle = (userType) => {
+  const dashboardTitles = {
+    'admin': 'Admin Dashboard & Controls',
+    'political_party': 'Political Party Dashboard',
+    'candidate': 'Candidate Management Portal',
+    'vidhan_sabha_prabhari': 'Vidhan Sabha Management',
+    'block_prabhari': 'Block Level Management',
+    'panchayat_prabhari': 'Panchayat Level Management',
+    'booth_volunteer': 'Booth Operations Dashboard'
+  };
+  return dashboardTitles[userType] || 'Dashboard';
+};
+
+const AdminDashboardScreen = ({ userType = 'admin' }) => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
   const { stats, adminInfo, loading, lastUpdated } = useSelector(state => state.adminDashboard);
   const [refreshing, setRefreshing] = useState(false);
   const [recentActivities, setRecentActivities] = useState([]);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const slideAnim = useState(new Animated.Value(-250))[0];
 
   const handleNavigate = (screen) => {
     setCurrentScreen(screen);
@@ -47,13 +79,108 @@ const AdminDashboardScreen = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    setRecentActivities([
-      { id: 1, action: `Created ${stats.totalCreatedUsers} users`, time: 'Now', type: 'success' },
-      { id: 2, action: `${stats.totalAssignedBooths} booths assigned`, time: 'Now', type: 'info' },
-      { id: 3, action: `${stats.totalAssignedConstituencies} constituencies`, time: 'Now', type: 'success' },
-      { id: 4, action: `Admin: ${adminInfo.fullname || user.fullname}`, time: 'Now', type: 'info' },
-    ]);
-  }, [stats, adminInfo, user]);
+    const roleSpecificActivities = getRoleSpecificActivities(userType, stats, adminInfo, user);
+    setRecentActivities(roleSpecificActivities);
+  }, [stats, adminInfo, user, userType]);
+
+  const getRoleSpecificActivities = (userType, stats, adminInfo, user) => {
+    const baseActivities = [
+      { id: 1, action: `${getRoleDisplayName(userType)}: ${adminInfo.fullname || user.fullname}`, time: 'Now', type: 'info' },
+    ];
+    
+    if (userType === 'admin' || userType === 'political_party') {
+      return [
+        ...baseActivities,
+        { id: 2, action: `Created ${stats.totalCreatedUsers} users`, time: 'Now', type: 'success' },
+        { id: 3, action: `${stats.totalAssignedBooths} booths assigned`, time: 'Now', type: 'info' },
+        { id: 4, action: `${stats.totalAssignedConstituencies} constituencies`, time: 'Now', type: 'success' },
+      ];
+    }
+    
+    return [
+      ...baseActivities,
+      { id: 2, action: `Managing assigned areas`, time: 'Now', type: 'info' },
+      { id: 3, action: `Voter data updated`, time: '2 mins ago', type: 'success' },
+      { id: 4, action: `Reports generated`, time: '5 mins ago', type: 'info' },
+    ];
+  };
+
+  const getRoleSpecificActions = (userType) => {
+    const commonActions = [
+      {
+        iconName: "assessment",
+        title: "Reports",
+        description: "View analytics",
+        color: "#8B5CF6",
+        onPress: () => handleNavigate('reports')
+      },
+      {
+        iconName: "settings",
+        title: "Settings",
+        description: "User preferences",
+        color: "#F59E0B",
+        onPress: () => {}
+      }
+    ];
+
+    switch (userType) {
+      case 'admin':
+      case 'political_party':
+        return [
+          {
+            iconName: "add",
+            title: "Create User",
+            description: "Add new user",
+            color: "#3B82F6",
+            onPress: () => handleNavigate('createBoothBoy')
+          },
+          {
+            iconName: "assignment",
+            title: "Assign Booths",
+            description: "Manage assignments",
+            color: "#10B981",
+            onPress: () => handleNavigate('assignBooths')
+          },
+          ...commonActions
+        ];
+      case 'candidate':
+        return [
+          {
+            iconName: "campaign",
+            title: "Campaign",
+            description: "Manage campaign",
+            color: "#3B82F6",
+            onPress: () => {}
+          },
+          {
+            iconName: "people",
+            title: "Supporters",
+            description: "View supporters",
+            color: "#10B981",
+            onPress: () => {}
+          },
+          ...commonActions
+        ];
+      default:
+        return [
+          {
+            iconName: "location-on",
+            title: "My Area",
+            description: "Assigned area",
+            color: "#3B82F6",
+            onPress: () => {}
+          },
+          {
+            iconName: "group",
+            title: "Voters",
+            description: "Manage voters",
+            color: "#10B981",
+            onPress: () => {}
+          },
+          ...commonActions
+        ];
+    }
+  };
 
   const StatCard = ({ iconName, title, value, color, onPress }) => {
     return (
@@ -107,21 +234,119 @@ const AdminDashboardScreen = () => {
     return (
       <CreatedUsersScreen 
         onBack={handleBack}
-        onLogout={handleLogout}
       />
     );
   }
 
+  if (currentScreen === 'createBoothBoy') {
+    return (
+      <CreateBoothBoyScreen 
+        onBack={handleBack}
+      />
+    );
+  }
+
+  if (currentScreen === 'assignBooths') {
+    return (
+      <BoothAssignmentScreen 
+        onBack={handleBack}
+      />
+    );
+  }
+
+  const MenuDrawer = () => (
+    <Modal
+      visible={menuVisible}
+      transparent={true}
+      animationType="none"
+      onRequestClose={() => setMenuVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalBackground} 
+          onPress={() => setMenuVisible(false)}
+        />
+        <Animated.View 
+          style={[styles.menuDrawer, { transform: [{ translateX: slideAnim }] }]}
+        >
+          <View style={styles.menuHeader}>
+            <Text style={styles.menuTitle}>Admin Menu</Text>
+            <TouchableOpacity onPress={() => setMenuVisible(false)}>
+              <AppIcon name="close" size={24} color="#374151" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.menuContent}>
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => { setMenuVisible(false); handleNavigate('createdUsers'); }}
+            >
+              <AppIcon name="group" size={20} color="#3B82F6" />
+              <Text style={styles.menuItemText}>Created Users</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => { setMenuVisible(false); handleNavigate('boothList'); }}
+            >
+              <AppIcon name="location-on" size={20} color="#10B981" />
+              <Text style={styles.menuItemText}>Booth List</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => { setMenuVisible(false); handleNavigate('createBoothBoy'); }}
+            >
+              <AppIcon name="add" size={20} color="#3B82F6" />
+              <Text style={styles.menuItemText}>Create Booth Boy</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => { setMenuVisible(false); handleNavigate('assignBooths'); }}
+            >
+              <AppIcon name="assignment" size={20} color="#10B981" />
+              <Text style={styles.menuItemText}>Assign Booths</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+
+  useEffect(() => {
+    if (menuVisible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -250,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [menuVisible]);
+
   return (
-    <ScrollView 
+    <View style={{ flex: 1 }}>
+      <MenuDrawer />
+      <ScrollView 
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
+        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(true)}>
+          <AppIcon name="menu" size={28} color="#374151" />
+        </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.adminName}>{user?.full_name || user?.username || 'Admin'}</Text>
-          <Text style={styles.greeting}>Admin Dashboard & Controls</Text>
+          <Text style={styles.adminName}>{user?.full_name || user?.username || getRoleDisplayName(userType)}</Text>
+          <Text style={styles.greeting}>{getRoleDashboardTitle(userType)}</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <View style={styles.logoutIconContainer}>
@@ -168,34 +393,16 @@ const AdminDashboardScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
-          <QuickActionCard
-            iconName="add"
-            title="Create Booth Boy"
-            description="Add new booth boy"
-            color="#3B82F6"
-            onPress={() => handleNavigate('createBoothBoy')}
-          />
-          <QuickActionCard
-            iconName="assignment"
-            title="Assign Booths"
-            description="Manage booth assignments"
-            color="#10B981"
-            onPress={() => handleNavigate('assignBooths')}
-          />
-          <QuickActionCard
-            iconName="assessment"
-            title="Reports"
-            description="View analytics"
-            color="#8B5CF6"
-            onPress={() => handleNavigate('reports')}
-          />
-          <QuickActionCard
-            iconName="settings"
-            title="Settings"
-            description="Admin preferences"
-            color="#F59E0B"
-            onPress={() => {}}
-          />
+          {getRoleSpecificActions(userType).map((action, index) => (
+            <QuickActionCard
+              key={index}
+              iconName={action.iconName}
+              title={action.title}
+              description={action.description}
+              color={action.color}
+              onPress={action.onPress}
+            />
+          ))}
         </View>
       </View>
 
@@ -222,6 +429,7 @@ const AdminDashboardScreen = () => {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -398,7 +606,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-
   activityContent: {
     flex: 1,
   },
